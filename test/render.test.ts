@@ -11,11 +11,12 @@ const norm = (html: string): string => {
 };
 
 describe('render: the fixtures shared with luna-pages (Go)', () => {
-  const cases = (fixtures as { cases: Array<{ name: string; fields?: Field[]; template: string; values: Record<string, unknown>; html: string }> }).cases;
+  const cases = (fixtures as { cases: Array<{ name: string; fields?: Field[]; template: string; values: Record<string, unknown>; entry?: { name: string; slug: string; published_at: string }; html: string }> }).cases;
   it('has cases', () => expect(cases.length).toBeGreaterThan(10));
   cases.forEach((c) =>
     it(c.name, () => {
-      expect(norm(render(c.template, c.values, c.fields || []))).toBe(norm(c.html));
+      const e = c.entry && { name: c.entry.name, slug: c.entry.slug, publishedAt: c.entry.published_at };
+      expect(norm(render(c.template, c.values, c.fields || [], e || {}))).toBe(norm(c.html));
     })
   );
 });

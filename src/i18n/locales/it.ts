@@ -9,7 +9,7 @@ const messages: StorageLabels = {
   noTemplates: 'Ancora nessun modello: creane uno e contrassegna i suoi elementi come campi.',
   noEntries: 'Ancora nessuna voce.',
   fieldsOf: 'Campi di %s',
-  noFields: 'Ancora nessun campo: seleziona un elemento e dagli un nome di campo nelle impostazioni.',
+  noFields: 'Ancora nessun campo: scrivi {{name}} in un testo oppure seleziona un elemento e dagli un nome di campo nelle impostazioni.',
   fieldName: 'Nome del campo',
   fieldType: 'Tipo del campo',
   fieldLabel: 'Etichetta del campo',
@@ -59,6 +59,19 @@ const messages: StorageLabels = {
   overwrite: 'Tieni la mia',
   search: 'Cerca',
   close: 'Chiudi',
+  fields: 'Campi',
+  inList: 'Elenco',
+  entryOwn: 'Questa voce',
+  entry_name: 'Nome della voce',
+  entry_slug: 'Indirizzo (slug)',
+  entry_url: 'Link alla voce',
+  entry_published_at: 'Data di pubblicazione',
+  newField: 'Nuovo campo…',
+  newFieldName: 'Nome del nuovo campo (a-z, 0-9, _):',
+  insertField: 'Inserisci campo',
+  copied: 'Copiato negli appunti',
+  placeholderHint: 'Scrivi {{name}} in un testo, un link o l’indirizzo di un’immagine per creare un campo; {{entry.slug}} e {{entry.name}} mostrano i dati della voce.',
+  warn_unknownPlaceholder: 'Segnaposto sconosciuto: %s',
 };
 
 export default messages;

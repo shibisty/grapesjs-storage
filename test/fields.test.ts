@@ -75,3 +75,53 @@ describe('values', () => {
     expect(sameFields(fields, JSON.parse(JSON.stringify(fields)))).toBe(true);
   });
 });
+
+describe('placeholders', () => {
+  const HTML = `
+<article>
+  <h1 data-field="title">Name</h1>
+  <p>{{ title }} for {{price}} UAH. {{price}} again, {{entry.slug}}, {{entry.nope}}, {{Bad}}</p>
+  <a href="{{entry.url}}" title="{{hint}}"><img src="{{photo}}" alt="{{photo}}"></a>
+  <ul data-field="specs" data-field-type="list"><li>{{spec}}: {{weight}}</li></ul>
+  <ul data-field="tags" data-field-type="list"><li><b data-field="tag">t</b> {{note}}</li></ul>
+  <script>var x = "{{secret}}";</script>
+</article>`;
+
+  it('declare text fields for the names no element declares, after them', () => {
+    const { fields, warnings, placeholders } = fieldsOfHtml(HTML);
+    expect(fields).toEqual([
+      { name: 'title', type: 'text' },
+      { name: 'specs', type: 'list', fields: [{ name: 'spec', type: 'text' }, { name: 'weight', type: 'text' }] },
+      { name: 'tags', type: 'list', fields: [{ name: 'tag', type: 'text' }, { name: 'note', type: 'text' }] },
+      { name: 'price', type: 'text' },
+      { name: 'hint', type: 'text' },
+      { name: 'photo', type: 'text' },
+    ]);
+    expect(placeholders).toEqual(['price', 'hint', 'photo', 'specs.spec', 'specs.weight', 'tags.note']);
+    // The list of placeholders only is not empty; entry.nope is unknown; {{Bad}} is not a placeholder.
+    expect(warnings).toEqual([{ code: 'unknownPlaceholder', field: 'entry.nope' }]);
+  });
+
+  it('take their settings by path; an element field keeps its own', () => {
+    const settings = new Map<string, any>([
+      ['price', { type: 'number', format: '0.00', label: 'Price', required: true }],
+      ['photo', { type: 'image' }],
+      ['specs.weight', { type: 'number', format: '0.0' }],
+      ['title', { type: 'richtext' }],
+      ['hint', { type: 'list' }], // a placeholder cannot be a list
+    ]);
+    const { fields } = fieldsOfHtml(HTML, settings);
+    const by = Object.fromEntries(fields.map((f) => [f.name, f]));
+    expect(by.price).toEqual({ name: 'price', type: 'number', format: '0.00', label: 'Price', required: true });
+    expect(by.photo.type).toBe('image');
+    expect(by.hint.type).toBe('text');
+    expect(by.title.type).toBe('text');
+    expect(by.specs.fields![1]).toEqual({ name: 'weight', type: 'number', format: '0.0' });
+  });
+
+  it('settingsOf flattens a saved field list by path', async () => {
+    const { settingsOf } = await import('../src/fields');
+    const m = settingsOf([{ name: 'a', type: 'number' }, { name: 'l', type: 'list', fields: [{ name: 'b', type: 'date' }] }]);
+    expect([...m.keys()]).toEqual(['a', 'l', 'l.b']);
+  });
+});

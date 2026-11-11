@@ -10,6 +10,8 @@ export interface Template {
   data?: ProjectData | null;
   version?: string | number;
   updatedAt?: string;
+  /** When it was last published (ISO): `{{entry.published_at}}`. */
+  publishedAt?: string;
 }
 
 export type EntryStatus = 'draft' | 'published' | 'archived';
@@ -26,6 +28,8 @@ export interface Entry {
   values?: Values;
   version?: string | number;
   updatedAt?: string;
+  /** When it was last published (ISO): `{{entry.published_at}}`. */
+  publishedAt?: string;
 }
 
 /** What a template write sends: the fields, and the design when the plugin owns it. */

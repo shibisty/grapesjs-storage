@@ -73,4 +73,17 @@ export interface StorageLabels {
   overwrite: string;
   search: string;
   close: string;
+  fields: string;
+  inList: string;
+  entryOwn: string;
+  entry_name: string;
+  entry_slug: string;
+  entry_url: string;
+  entry_published_at: string;
+  newField: string;
+  newFieldName: string;
+  insertField: string;
+  copied: string;
+  placeholderHint: string;
+  warn_unknownPlaceholder: string;
 }

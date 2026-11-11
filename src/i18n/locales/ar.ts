@@ -9,7 +9,7 @@ const messages: StorageLabels = {
   noTemplates: 'لا توجد قوالب بعد: أنشئ قالبًا وحدد عناصره كحقول.',
   noEntries: 'لا توجد إدخالات بعد.',
   fieldsOf: 'حقول %s',
-  noFields: 'لا توجد حقول بعد: اختر عنصرًا وأعطه اسم حقل في إعداداته.',
+  noFields: 'لا توجد حقول بعد: اكتب {{name}} في نص، أو حدد عنصرًا وأعطه اسم حقل في إعداداته.',
   fieldName: 'اسم الحقل',
   fieldType: 'نوع الحقل',
   fieldLabel: 'تسمية الحقل',
@@ -59,6 +59,19 @@ const messages: StorageLabels = {
   overwrite: 'احتفظ بنسختي',
   search: 'بحث',
   close: 'إغلاق',
+  fields: 'الحقول',
+  inList: 'قائمة',
+  entryOwn: 'هذا الإدخال',
+  entry_name: 'اسم الإدخال',
+  entry_slug: 'العنوان (slug)',
+  entry_url: 'رابط الإدخال',
+  entry_published_at: 'تاريخ النشر',
+  newField: 'حقل جديد…',
+  newFieldName: 'اسم الحقل الجديد (a-z، 0-9، _):',
+  insertField: 'إدراج حقل',
+  copied: 'نُسخ إلى الحافظة',
+  placeholderHint: 'اكتب {{name}} في نص أو رابط أو عنوان صورة لإضافة حقل؛ يعرض {{entry.slug}} و{{entry.name}} بيانات الإدخال نفسه.',
+  warn_unknownPlaceholder: 'عنصر نائب غير معروف: %s',
 };
 
 export default messages;

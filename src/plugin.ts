@@ -1,6 +1,7 @@
 import type { Editor } from 'grapesjs';
 import { EntryMode } from './editor/EntryMode';
 import { TemplateMode } from './editor/TemplateMode';
+import { bindPlaceholderAction } from './editor/placeholders';
 import { bindFieldTraits, refreshSelectionTraits } from './editor/traits';
 import { COMMANDS, EVENTS } from './events';
 import { emptyValue } from './fields';
@@ -133,6 +134,7 @@ export default function storagePlugin(editor: Editor, userOpts: StorageOptions =
     current: () =>
       entries.entry ? { entry: entries.entry, template: entries.template, values: entries.values, problems: entries.problems() } : null,
     setValue: (name, value) => entries.setValue(name, value),
+    setMeta: (patch) => entries.setMeta(patch),
     publish,
     removeEntry,
     flush: async () => {
@@ -267,6 +269,8 @@ export default function storagePlugin(editor: Editor, userOpts: StorageOptions =
   editor.onReady(() => {
     if (disposed) return;
     mount();
+    // The rich text editor takes actions once the canvas is up.
+    offs.push(bindPlaceholderAction(editor, t, { active: () => templates.active, fields: () => templates.fields }));
     // grapesjs-pages may have opened a template before we listened.
     const pm = ed.PagesManager;
     void pm?.whenReady?.()

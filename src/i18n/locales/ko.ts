@@ -9,7 +9,7 @@ const messages: StorageLabels = {
   noTemplates: '아직 템플릿이 없습니다: 템플릿을 만들고 요소를 필드로 표시하세요.',
   noEntries: '아직 항목이 없습니다.',
   fieldsOf: '%s의 필드',
-  noFields: '아직 필드가 없습니다: 요소를 선택하고 설정에서 필드 이름을 지정하세요.',
+  noFields: '아직 필드가 없습니다: 텍스트에 {{name}}을 입력하거나 요소를 선택하고 설정에서 필드 이름을 지정하세요.',
   fieldName: '필드 이름',
   fieldType: '필드 유형',
   fieldLabel: '필드 레이블',
@@ -59,6 +59,19 @@ const messages: StorageLabels = {
   overwrite: '내 버전 유지',
   search: '검색',
   close: '닫기',
+  fields: '필드',
+  inList: '목록',
+  entryOwn: '이 항목',
+  entry_name: '항목 이름',
+  entry_slug: '주소(slug)',
+  entry_url: '항목 링크',
+  entry_published_at: '게시일',
+  newField: '새 필드…',
+  newFieldName: '새 필드 이름(a-z, 0-9, _):',
+  insertField: '필드 삽입',
+  copied: '클립보드에 복사됨',
+  placeholderHint: '텍스트, 링크 또는 이미지 주소에 {{name}}을 입력하면 필드가 추가됩니다. {{entry.slug}}와 {{entry.name}}은 항목 자체의 데이터를 표시합니다.',
+  warn_unknownPlaceholder: '알 수 없는 자리 표시자: %s',
 };
 
 export default messages;

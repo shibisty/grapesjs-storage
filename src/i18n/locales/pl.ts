@@ -9,7 +9,7 @@ const messages: StorageLabels = {
   noTemplates: 'Nie ma jeszcze szablonów: utwórz szablon i oznacz jego elementy jako pola.',
   noEntries: 'Nie ma jeszcze wpisów.',
   fieldsOf: 'Pola szablonu %s',
-  noFields: 'Nie ma jeszcze pól: zaznacz element i nadaj mu nazwę pola w ustawieniach.',
+  noFields: 'Brak pól: wpisz {{name}} w tekście albo zaznacz element i nadaj mu nazwę pola w ustawieniach.',
   fieldName: 'Nazwa pola',
   fieldType: 'Typ pola',
   fieldLabel: 'Etykieta pola',
@@ -59,6 +59,19 @@ const messages: StorageLabels = {
   overwrite: 'Zachowaj moją',
   search: 'Szukaj',
   close: 'Zamknij',
+  fields: 'Pola',
+  inList: 'Lista',
+  entryOwn: 'Ten wpis',
+  entry_name: 'Nazwa wpisu',
+  entry_slug: 'Adres (slug)',
+  entry_url: 'Link do wpisu',
+  entry_published_at: 'Data publikacji',
+  newField: 'Nowe pole…',
+  newFieldName: 'Nazwa nowego pola (a-z, 0-9, _):',
+  insertField: 'Wstaw pole',
+  copied: 'Skopiowano do schowka',
+  placeholderHint: 'Wpisz {{name}} w tekście, linku lub adresie obrazka, aby dodać pole; {{entry.slug}} i {{entry.name}} pokazują dane samego wpisu.',
+  warn_unknownPlaceholder: 'Nieznany symbol zastępczy: %s',
 };
 
 export default messages;

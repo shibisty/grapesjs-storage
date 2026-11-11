@@ -9,7 +9,7 @@ const messages: StorageLabels = {
   noTemplates: 'Encara no hi ha plantilles: crea’n una i marca els seus elements com a camps.',
   noEntries: 'Encara no hi ha entrades.',
   fieldsOf: 'Camps de %s',
-  noFields: 'Encara no hi ha camps: selecciona un element i dona-li un nom de camp a la configuració.',
+  noFields: 'Encara no hi ha camps: escriviu {{name}} en un text o seleccioneu un element i doneu-li un nom de camp a la configuració.',
   fieldName: 'Nom del camp',
   fieldType: 'Tipus del camp',
   fieldLabel: 'Etiqueta del camp',
@@ -59,6 +59,19 @@ const messages: StorageLabels = {
   overwrite: 'Mantén la meva',
   search: 'Cerca',
   close: 'Tanca',
+  fields: 'Camps',
+  inList: 'Llista',
+  entryOwn: 'Aquesta entrada',
+  entry_name: 'Nom de l’entrada',
+  entry_slug: 'Adreça (slug)',
+  entry_url: 'Enllaç a l’entrada',
+  entry_published_at: 'Data de publicació',
+  newField: 'Camp nou…',
+  newFieldName: 'Nom del camp nou (a-z, 0-9, _):',
+  insertField: 'Insereix un camp',
+  copied: 'Copiat al porta-retalls',
+  placeholderHint: 'Escriviu {{name}} en un text, un enllaç o l’adreça d’una imatge per crear un camp; {{entry.slug}} i {{entry.name}} mostren les dades de l’entrada.',
+  warn_unknownPlaceholder: 'Marcador desconegut: %s',
 };
 
 export default messages;

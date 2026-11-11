@@ -9,7 +9,7 @@ const messages: StorageLabels = {
   noTemplates: 'No templates yet: make one and mark its elements as fields.',
   noEntries: 'No entries yet.',
   fieldsOf: 'Fields of %s',
-  noFields: 'No fields yet: select an element and give it a field name in its settings.',
+  noFields: 'No fields yet: type {{name}} in a text, or select an element and give it a field name in its settings.',
   fieldName: 'Field name',
   fieldType: 'Field type',
   fieldLabel: 'Field label',
@@ -59,6 +59,19 @@ const messages: StorageLabels = {
   overwrite: 'Keep mine',
   search: 'Search',
   close: 'Close',
+  fields: 'Fields',
+  inList: 'List',
+  entryOwn: 'This entry',
+  entry_name: 'Entry name',
+  entry_slug: 'Address (slug)',
+  entry_url: 'Link to the entry',
+  entry_published_at: 'Publication date',
+  newField: 'New field…',
+  newFieldName: 'Name of the new field (a-z, 0-9, _):',
+  insertField: 'Insert field',
+  copied: 'Copied to the clipboard',
+  placeholderHint: 'Type {{name}} in a text, a link or an image address to add a field; {{entry.slug}} and {{entry.name}} show the entry’s own.',
+  warn_unknownPlaceholder: 'Unknown placeholder: %s',
 };
 
 export default messages;

@@ -9,7 +9,7 @@ const messages: StorageLabels = {
   noTemplates: 'אין עדיין תבניות: צרו אחת וסמנו את הרכיבים שלה כשדות.',
   noEntries: 'אין עדיין רשומות.',
   fieldsOf: 'השדות של %s',
-  noFields: 'אין עדיין שדות: בחרו רכיב ותנו לו שם שדה בהגדרות שלו.',
+  noFields: 'אין עדיין שדות: כתבו {{name}} בטקסט, או בחרו רכיב ותנו לו שם שדה בהגדרות שלו.',
   fieldName: 'שם השדה',
   fieldType: 'סוג השדה',
   fieldLabel: 'תווית השדה',
@@ -59,6 +59,19 @@ const messages: StorageLabels = {
   overwrite: 'לשמור את שלי',
   search: 'חיפוש',
   close: 'סגירה',
+  fields: 'שדות',
+  inList: 'רשימה',
+  entryOwn: 'רשומה זו',
+  entry_name: 'שם הרשומה',
+  entry_slug: 'כתובת (slug)',
+  entry_url: 'קישור לרשומה',
+  entry_published_at: 'תאריך פרסום',
+  newField: 'שדה חדש…',
+  newFieldName: 'שם השדה החדש (a-z, 0-9, _):',
+  insertField: 'הוספת שדה',
+  copied: 'הועתק ללוח',
+  placeholderHint: 'כתבו {{name}} בטקסט, בקישור או בכתובת תמונה כדי להוסיף שדה; {{entry.slug}} ו־{{entry.name}} מציגים את נתוני הרשומה עצמה.',
+  warn_unknownPlaceholder: 'מציין מיקום לא מוכר: %s',
 };
 
 export default messages;

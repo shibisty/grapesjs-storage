@@ -87,6 +87,56 @@ describe('template mode (standalone: the plugin owns the design)', () => {
   });
 });
 
+describe('placeholders in a template', () => {
+  it('declare fields, keep their settings from the panel, render in an entry with the entry own values', async () => {
+    const store = new MemoryContentStore();
+    await store.saveTemplate('t1', { name: 'Product', fields: [] });
+    const s = await createEditor({ plugin: { store } });
+    editor = s.editor;
+    s.editor.runCommand('storage:open');
+    await s.api.editTemplate('t1');
+    s.editor.setComponents('<article><h2>{{title}}</h2><p>Price: {{price}}</p><a href="{{entry.url}}">{{entry.name}}</a></article>');
+    await until(async () => (await store.getTemplate('t1'))!.fields.length === 2);
+    expect((await store.getTemplate('t1'))!.fields).toEqual([{ name: 'title', type: 'text' }, { name: 'price', type: 'text' }]);
+    // The panel: the placeholder fields with their settings, the hint, the insert menu.
+    await until(() => !!panel().querySelector('[data-path="price"] [data-role="field-type"]'));
+    expect(panel().querySelector('[data-role="placeholder-hint"]')!.textContent).toContain('{{name}}');
+    const type = panel().querySelector<HTMLSelectElement>('[data-path="price"] [data-role="field-type"]')!;
+    type.value = 'number';
+    type.dispatchEvent(new Event('change'));
+    await until(() => !!panel().querySelector<HTMLInputElement>('[data-path="price"] [data-role="field-format"]'));
+    const format = panel().querySelector<HTMLInputElement>('[data-path="price"] [data-role="field-format"]')!;
+    format.value = '0.00';
+    format.dispatchEvent(new Event('change'));
+    await until(async () => (await store.getTemplate('t1'))!.fields[1].format === '0.00');
+    expect((await store.getTemplate('t1'))!.fields[1]).toEqual({ name: 'price', type: 'number', format: '0.00' });
+    // The insert menu: fields, list items, the entry's own, a new field.
+    panel().querySelector('[data-role="insert-menu"]')!.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    const menu = document.querySelector('.gjss-menu')!;
+    expect([...menu.querySelectorAll('.gjss-menu-item')].map((b) => b.getAttribute('data-name'))).toEqual(['title', 'price', 'entry.name', 'entry.slug', 'entry.url', 'entry.published_at', '']);
+    document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    expect(document.querySelector('.gjss-menu')).toBeNull();
+
+    // The rich text toolbar has the "Insert field" action.
+    expect((s.editor as any).RichTextEditor.get('content-storage-placeholder')).toBeTruthy();
+
+    // Reopened later: the settings come back from the saved fields.
+    await s.api.editTemplate('t1');
+    expect(s.api.fields().fields[1]).toEqual({ name: 'price', type: 'number', format: '0.00' });
+
+    // An entry shows its values and its own name and address.
+    await store.putEntry({ id: 'e1', templateId: 't1', name: 'Grinder', slug: '/products/grinder', values: { title: 'Coffee grinder', price: 49.5 } });
+    await s.api.openEntry('e1');
+    const html = s.editor.getHtml();
+    expect(html).toContain('<h2>Coffee grinder</h2>');
+    expect(html).toContain('Price: 49.50');
+    expect(html).toContain('href="/products/grinder"');
+    expect(html).toContain('>Grinder</a>');
+    s.api.setMeta({ name: 'Grinder Pro' });
+    expect(s.editor.getHtml()).toContain('>Grinder Pro</a>');
+  });
+});
+
 describe('entry mode', () => {
   it('renders the values into the locked design', async () => {
     const store = await seeded();

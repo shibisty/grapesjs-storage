@@ -114,11 +114,17 @@ export class EntryMode {
     if (!wrapper) return;
     this.muted = true;
     try {
-      wrapper.components(render(this.html, this.values, this.fields));
+      wrapper.components(render(this.html, this.values, this.fields, this.meta()));
       this.lock(wrapper);
     } finally {
       this.unmuteSoon();
     }
+  }
+
+  /** What `{{entry.…}}` shows in the canvas: not published yet is "as if now". */
+  private meta(): { name?: string; slug?: string; publishedAt?: string } {
+    const e = this.entry;
+    return e ? { name: e.name, slug: e.slug, publishedAt: e.publishedAt || new Date().toISOString() } : {};
   }
 
   private lock(wrapper: any): void {
@@ -191,6 +197,7 @@ export class EntryMode {
     if (patch.slug != null) this.entry.slug = patch.slug.trim() || undefined;
     this.metaDirty = true;
     this.changedAt++;
+    this.apply(); // {{entry.name}}, {{entry.slug}}
     this.schedule();
   }
 

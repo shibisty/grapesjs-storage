@@ -2,7 +2,8 @@ import type { Editor } from 'grapesjs';
 import type { EntryMode } from '../editor/EntryMode';
 import type { TemplateMode } from '../editor/TemplateMode';
 import { EVENTS } from '../events';
-import type { Field } from '../fields';
+import { FIELD_TYPES, type Field, type FieldType } from '../fields';
+import { insertPlaceholder, menuItems, openMenu, placeholder } from '../editor/placeholders';
 import { getLocale, isRtlLocale, type Translator } from '../i18n';
 import type { ContentStore, Entry, Template } from '../store/types';
 import { fmt, report } from '../utils';
@@ -129,21 +130,113 @@ export class Panel {
   private fieldsView(): HTMLElement {
     const t = this.t;
     const tm = this.templates;
-    const row = (f: Field, depth = 0): HTMLElement[] => [
+    const own = new Set(tm.placeholders);
+    // Into the text being edited; else to the clipboard.
+    const put = (name: string): void => {
+      if (insertPlaceholder(this.editor, name)) return;
+      void navigator.clipboard
+        ?.writeText(placeholder(name))
+        .then(() => this.flash(t('copied')))
+        .catch(() => undefined);
+    };
+    const settings = (f: Field, path: string): HTMLElement =>
       h(
-        'li',
-        { class: 'gjss-fieldrow', 'data-name': f.name, style: depth ? `padding-inline-start:${10 + depth * 14}px` : false },
-        h('code', {}, f.name),
-        h('span', { class: 'gjss-sub' }, `${t(`type_${f.type}` as never)}${f.required ? ' *' : ''}${f.label ? ` · ${f.label}` : ''}`)
-      ),
-      ...(f.fields || []).flatMap((s) => row(s, depth + 1)),
-    ];
+        'div',
+        { class: 'gjss-fieldset', 'data-path': path },
+        h(
+          'select',
+          {
+            class: 'gjss-input',
+            'aria-label': t('fieldType'),
+            'data-role': 'field-type',
+            onchange: (e: Event) => tm.setFieldSettings(path, { type: (e.target as HTMLSelectElement).value as FieldType }),
+          },
+          ...FIELD_TYPES.filter((x) => x !== 'list').map((x) => h('option', { value: x, selected: x === f.type }, t(`type_${x}` as never)))
+        ),
+        f.type === 'number' || f.type === 'date'
+          ? h('input', {
+              class: 'gjss-input',
+              'aria-label': t('fieldFormat'),
+              'data-role': 'field-format',
+              placeholder: f.type === 'number' ? '0.00' : 'DD.MM.YYYY',
+              value: f.format || '',
+              onchange: (e: Event) => tm.setFieldSettings(path, { format: (e.target as HTMLInputElement).value.trim() }),
+            })
+          : null,
+        f.type === 'select'
+          ? h('input', {
+              class: 'gjss-input',
+              'aria-label': t('fieldOptions'),
+              'data-role': 'field-options',
+              placeholder: 'red, green, blue',
+              value: (f.options || []).join(', '),
+              onchange: (e: Event) =>
+                tm.setFieldSettings(path, {
+                  options: (e.target as HTMLInputElement).value
+                    .split(',')
+                    .map((o) => o.trim())
+                    .filter(Boolean),
+                }),
+            })
+          : null,
+        h('input', {
+          class: 'gjss-input',
+          'aria-label': t('fieldLabel'),
+          'data-role': 'field-label',
+          placeholder: t('fieldLabel'),
+          value: f.label || '',
+          onchange: (e: Event) => tm.setFieldSettings(path, { label: (e.target as HTMLInputElement).value.trim() }),
+        }),
+        h(
+          'label',
+          { class: 'gjss-check' },
+          h('input', {
+            type: 'checkbox',
+            'data-role': 'field-required',
+            checked: !!f.required,
+            onchange: (e: Event) => tm.setFieldSettings(path, { required: (e.target as HTMLInputElement).checked }),
+          }),
+          t('fieldRequired')
+        )
+      );
+    const row = (f: Field, prefix = ''): HTMLElement[] => {
+      const path = prefix + f.name;
+      const fromPlaceholder = own.has(path);
+      return [
+        h(
+          'li',
+          { class: 'gjss-fieldrow', 'data-name': f.name, style: prefix ? 'padding-inline-start:24px' : false },
+          h('code', {}, f.name),
+          h(
+            'span',
+            { class: 'gjss-sub gjss-main' },
+            `${t(`type_${f.type}` as never)}${f.required ? ' *' : ''}${f.label ? ` · ${f.label}` : ''}${fromPlaceholder ? ` · ${placeholder(f.name)}` : ''}`
+          ),
+          f.type !== 'list'
+            ? h('button', { class: 'gjss-act', type: 'button', 'data-role': 'insert', title: `${t('insertField')}: ${placeholder(f.name)}`, onmousedown: (e: Event) => (e.preventDefault(), put(f.name)) }, '{…}')
+            : null
+        ),
+        ...(fromPlaceholder ? [h('li', { class: 'gjss-fieldrow', style: prefix ? 'padding-inline-start:24px' : false }, settings(f, path))] : []),
+        ...(f.fields || []).flatMap((s) => row(s, f.name + '.')),
+      ];
+    };
+    const insertBtn = h(
+      'button',
+      { class: 'gjss-secondary', type: 'button', 'data-role': 'insert-menu' },
+      `{…} ${t('insertField')}`
+    );
+    insertBtn.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      openMenu(insertBtn, menuItems(tm.fields, t), t, put);
+    });
     return h(
       'section',
       { class: 'gjss-fields' },
       h('h4', { class: 'gjss-section' }, fmt(t('fieldsOf'), tm.name || '')),
       tm.fields.length ? h('ul', { class: 'gjss-list' }, ...tm.fields.flatMap((f) => row(f))) : h('p', { class: 'gjss-hint' }, t('noFields')),
       ...tm.warnings.map((w) => h('p', { class: 'gjss-warn', 'data-code': w.code }, fmt(t(`warn_${w.code}` as never), w.field))),
+      h('p', { class: 'gjss-hint', 'data-role': 'placeholder-hint' }, t('placeholderHint')),
+      insertBtn,
       h(
         'button',
         { class: 'gjss-secondary', type: 'button', 'data-role': 'entries', onclick: () => tm.id && this.showEntries(tm.id) },

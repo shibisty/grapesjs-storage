@@ -9,7 +9,7 @@ const messages: StorageLabels = {
   noTemplates: 'Inga mallar ännu: skapa en och markera dess element som fält.',
   noEntries: 'Inga poster ännu.',
   fieldsOf: 'Fält i %s',
-  noFields: 'Inga fält ännu: välj ett element och ge det ett fältnamn i inställningarna.',
+  noFields: 'Inga fält ännu: skriv {{name}} i en text, eller markera ett element och ge det ett fältnamn i inställningarna.',
   fieldName: 'Fältnamn',
   fieldType: 'Fälttyp',
   fieldLabel: 'Fältetikett',
@@ -59,6 +59,19 @@ const messages: StorageLabels = {
   overwrite: 'Behåll min',
   search: 'Sök',
   close: 'Stäng',
+  fields: 'Fält',
+  inList: 'Lista',
+  entryOwn: 'Den här posten',
+  entry_name: 'Postens namn',
+  entry_slug: 'Adress (slug)',
+  entry_url: 'Länk till posten',
+  entry_published_at: 'Publiceringsdatum',
+  newField: 'Nytt fält…',
+  newFieldName: 'Namn på det nya fältet (a-z, 0-9, _):',
+  insertField: 'Infoga fält',
+  copied: 'Kopierat till urklipp',
+  placeholderHint: 'Skriv {{name}} i en text, en länk eller en bildadress för att skapa ett fält; {{entry.slug}} och {{entry.name}} visar postens egna uppgifter.',
+  warn_unknownPlaceholder: 'Okänd platshållare: %s',
 };
 
 export default messages;

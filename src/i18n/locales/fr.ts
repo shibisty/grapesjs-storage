@@ -9,7 +9,7 @@ const messages: StorageLabels = {
   noTemplates: 'Aucun modèle pour l’instant : créez-en un et marquez ses éléments comme champs.',
   noEntries: 'Aucune entrée pour l’instant.',
   fieldsOf: 'Champs de %s',
-  noFields: 'Aucun champ pour l’instant : sélectionnez un élément et donnez-lui un nom de champ dans ses paramètres.',
+  noFields: 'Pas encore de champs : écrivez {{name}} dans un texte, ou sélectionnez un élément et donnez-lui un nom de champ dans ses réglages.',
   fieldName: 'Nom du champ',
   fieldType: 'Type du champ',
   fieldLabel: 'Libellé du champ',
@@ -59,6 +59,19 @@ const messages: StorageLabels = {
   overwrite: 'Garder la mienne',
   search: 'Rechercher',
   close: 'Fermer',
+  fields: 'Champs',
+  inList: 'Liste',
+  entryOwn: 'Cette entrée',
+  entry_name: 'Nom de l’entrée',
+  entry_slug: 'Adresse (slug)',
+  entry_url: 'Lien vers l’entrée',
+  entry_published_at: 'Date de publication',
+  newField: 'Nouveau champ…',
+  newFieldName: 'Nom du nouveau champ (a-z, 0-9, _) :',
+  insertField: 'Insérer un champ',
+  copied: 'Copié dans le presse-papiers',
+  placeholderHint: 'Écrivez {{name}} dans un texte, un lien ou l’adresse d’une image pour créer un champ ; {{entry.slug}} et {{entry.name}} affichent les données de l’entrée.',
+  warn_unknownPlaceholder: 'Espace réservé inconnu : %s',
 };
 
 export default messages;

@@ -1,6 +1,6 @@
 {
   "name": "grapesjs-storage",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "GrapesJS plugin for structured content: mark components of a template as typed fields, keep entries that fill them, edit an entry on its locked template or in a form, render it without GrapesJS. Any backend through a ContentStore: IndexedDB, memory or a REST server (openapi.yaml).",
   "type": "module",
   "main": "./dist/grapesjs-storage.umd.cjs",

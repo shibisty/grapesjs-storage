@@ -9,7 +9,7 @@ const messages: StorageLabels = {
   noTemplates: 'Ingen maler ennå: lag en og merk elementene som felt.',
   noEntries: 'Ingen oppføringer ennå.',
   fieldsOf: 'Felt i %s',
-  noFields: 'Ingen felt ennå: velg et element og gi det et feltnavn i innstillingene.',
+  noFields: 'Ingen felt ennå: skriv {{name}} i en tekst, eller velg et element og gi det et feltnavn i innstillingene.',
   fieldName: 'Feltnavn',
   fieldType: 'Felttype',
   fieldLabel: 'Feltetikett',
@@ -59,6 +59,19 @@ const messages: StorageLabels = {
   overwrite: 'Behold min',
   search: 'Søk',
   close: 'Lukk',
+  fields: 'Felt',
+  inList: 'Liste',
+  entryOwn: 'Denne oppføringen',
+  entry_name: 'Navn på oppføringen',
+  entry_slug: 'Adresse (slug)',
+  entry_url: 'Lenke til oppføringen',
+  entry_published_at: 'Publiseringsdato',
+  newField: 'Nytt felt…',
+  newFieldName: 'Navn på det nye feltet (a-z, 0-9, _):',
+  insertField: 'Sett inn felt',
+  copied: 'Kopiert til utklippstavlen',
+  placeholderHint: 'Skriv {{name}} i en tekst, en lenke eller en bildeadresse for å lage et felt; {{entry.slug}} og {{entry.name}} viser oppføringens egne data.',
+  warn_unknownPlaceholder: 'Ukjent plassholder: %s',
 };
 
 export default messages;

@@ -1,5 +1,25 @@
 import { ATTR, type Field, type Values } from './fields';
 
+/** What the `{{entry.…}}` placeholders show. */
+export interface EntryMeta {
+  name?: string;
+  slug?: string;
+  /** ISO time; shown as YYYY-MM-DD. */
+  publishedAt?: string;
+}
+
+/**
+ * `{{name}}` (a field: a-z, digits, _) and `{{entry.name}}`; spaces inside
+ * the braces are allowed. Anything else in braces is left as it is.
+ */
+export const PLACEHOLDER = /\{\{\s*((?:entry\.)?[a-z][a-z0-9_]{0,63})\s*\}\}/g;
+
+/** The entry's own values a placeholder can show: `{{entry.slug}}`. */
+export const ENTRY_KEYS = ['name', 'slug', 'url', 'published_at'] as const;
+
+/** Attributes whose placeholders are filled; href and src are checked as URLs afterwards. */
+export const PLACEHOLDER_ATTRS = ['href', 'src', 'alt', 'title', 'aria-label'] as const;
+
 /**
  * Fills a template's field elements with an entry's values — the same
  * rules as luna-pages' Go renderer, checked by the same fixtures
@@ -14,32 +34,51 @@ import { ATTR, type Field, type Values } from './fields';
  *   link           href and, given a label, the text ({"url", "label"} or a URL)
  *   list           the first child (or the data-field-item child) once per item
  *
- * A field without a value keeps the template's placeholder. Works in the
- * browser (and jsdom); no GrapesJS needed.
+ * A field without a value keeps the template's placeholder.
+ *
+ * Placeholders in text and in href, src, alt, title and aria-label are
+ * replaced too: `{{title}}` is a field's value as text (nothing when it
+ * has none), `{{entry.slug}}` the entry's own. Inside a list's item they
+ * name the item's fields. Script and style keep their text.
+ *
+ * Works in the browser (and jsdom); no GrapesJS needed.
  */
-export function render(templateHtml: string, values: Values, fields: Field[] = []): string {
+export function render(templateHtml: string, values: Values, fields: Field[] = [], entry: EntryMeta = {}): string {
   const tpl = document.createElement('template');
   tpl.innerHTML = templateHtml;
-  fillChildren(tpl.content, index(fields), values || {});
+  fillChildren(tpl.content, index(fields), values || {}, entry);
   return tpl.innerHTML;
 }
 
 const index = (fields: Field[]): Map<string, Field> => new Map(fields.map((f) => [f.name, f]));
 
-function fillChildren(parent: ParentNode, fields: Map<string, Field>, values: Values): void {
-  for (const el of Array.from(parent.children)) fillElement(el, fields, values);
+function fillChildren(parent: ParentNode, fields: Map<string, Field>, values: Values, entry: EntryMeta): void {
+  for (const node of Array.from(parent.childNodes)) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const s = node.nodeValue || '';
+      if (s.includes('{{')) node.nodeValue = replace(s, '', fields, values, entry);
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      fillElement(node as Element, fields, values, entry);
+    }
+  }
 }
 
-function fillElement(el: Element, fields: Map<string, Field>, values: Values): void {
+function fillElement(el: Element, fields: Map<string, Field>, values: Values, entry: EntryMeta): void {
+  fillAttrs(el, fields, values, entry);
+  const tag = el.tagName.toLowerCase();
+  if (tag === 'script' || tag === 'style') return; // their text stays: a value put there would not be escaped
   const name = el.getAttribute(ATTR.name);
   if (!name) {
-    fillChildren(el, fields, values);
+    fillChildren(el, fields, values, entry);
     return;
   }
   const f: Field = fields.get(name) || { name, type: (el.getAttribute(ATTR.type) || 'text') as Field['type'] };
   const format = f.format || el.getAttribute(ATTR.format) || '';
   const v = values[name];
-  if (v === undefined || v === null) return; // the placeholder stays
+  if (v === undefined || v === null) {
+    fillChildren(el, fields, values, entry); // the placeholder stays, its own placeholders filled
+    return;
+  }
   switch (f.type) {
     case 'richtext':
       el.innerHTML = sanitizeHtml(asString(v));
@@ -52,6 +91,7 @@ function fillElement(el: Element, fields: Map<string, Field>, values: Values): v
       break;
     case 'boolean':
       if (v === false) el.remove();
+      else fillChildren(el, fields, values, entry);
       break;
     case 'image': {
       const { url, alt } = typeof v === 'object' ? (v as { url?: string; alt?: string }) : { url: asString(v), alt: '' };
@@ -68,17 +108,18 @@ function fillElement(el: Element, fields: Map<string, Field>, values: Values): v
       const safe = url ? cleanUrl(url, false) : null;
       if (safe) el.setAttribute('href', safe);
       if (label) el.textContent = label;
+      else fillChildren(el, fields, values, entry);
       break;
     }
     case 'list':
-      fillList(el, f, v);
+      fillList(el, f, v, entry);
       break;
     default:
       el.textContent = asString(v);
   }
 }
 
-function fillList(el: Element, f: Field, v: unknown): void {
+function fillList(el: Element, f: Field, v: unknown, entry: EntryMeta): void {
   if (!Array.isArray(v)) return;
   const item = Array.from(el.children).find((c) => c.hasAttribute(ATTR.item)) || el.children[0];
   if (!item) return;
@@ -88,10 +129,84 @@ function fillList(el: Element, f: Field, v: unknown): void {
     // The clone is filled as if it were the field element of its own values.
     const holder = document.createElement('div');
     holder.appendChild(c);
-    fillChildren(holder, sub, (values || {}) as Values);
+    fillChildren(holder, sub, (values || {}) as Values, entry);
     return Array.from(holder.childNodes);
   });
   el.replaceChildren(...clones.flat());
+}
+
+/* ------------------------------ placeholders ------------------------------ */
+
+function fillAttrs(el: Element, fields: Map<string, Field>, values: Values, entry: EntryMeta): void {
+  for (const name of PLACEHOLDER_ATTRS) {
+    const raw = el.getAttribute(name);
+    if (raw == null || !raw.includes('{{')) continue;
+    let val = replace(raw, name, fields, values, entry);
+    if (name === 'href' || name === 'src') {
+      const safe = cleanUrl(val, name === 'src');
+      if (!safe) {
+        el.removeAttribute(name); // an unsafe or empty address: no attribute
+        continue;
+      }
+      val = safe;
+    }
+    el.setAttribute(name, val);
+  }
+}
+
+function replace(s: string, attr: string, fields: Map<string, Field>, values: Values, entry: EntryMeta): string {
+  return s.replace(PLACEHOLDER, (_m, name: string) => {
+    if (name.startsWith('entry.')) return entryValue(name.slice(6), entry);
+    const f = fields.get(name) || { name, type: 'text' as const };
+    const v = values[name];
+    return v === undefined || v === null ? '' : valueText(f, v, attr);
+  });
+}
+
+function entryValue(key: string, e: EntryMeta): string {
+  switch (key) {
+    case 'name':
+      return e.name || '';
+    case 'slug':
+    case 'url':
+      return e.slug || '';
+    case 'published_at':
+      return e.publishedAt ? formatDate(e.publishedAt, 'YYYY-MM-DD') : '';
+  }
+  return '';
+}
+
+/**
+ * A value as a placeholder shows it: text by the field's type; an image
+ * is its URL in src and its alt text elsewhere, a link its URL in href and
+ * its label (or URL) elsewhere; yes/no and lists show nothing (they are
+ * elements' fields).
+ */
+export function valueText(f: Field, v: unknown, attr = ''): string {
+  switch (f.type) {
+    case 'number':
+      return formatNumber(v, f.format || '');
+    case 'date':
+      return formatDate(asString(v), f.format || '');
+    case 'richtext': {
+      const tpl = document.createElement('template');
+      tpl.innerHTML = asString(v);
+      tpl.content.querySelectorAll('script,style').forEach((n) => n.remove());
+      return tpl.content.textContent || '';
+    }
+    case 'image': {
+      const { url, alt } = typeof v === 'object' && v ? (v as { url?: string; alt?: string }) : { url: asString(v), alt: '' };
+      return (attr === 'src' ? url : alt) || '';
+    }
+    case 'link': {
+      const { url, label } = typeof v === 'object' && v ? (v as { url?: string; label?: string }) : { url: asString(v), label: '' };
+      return (attr === 'href' || !label ? url : label) || '';
+    }
+    case 'boolean':
+    case 'list':
+      return '';
+  }
+  return asString(v);
 }
 
 const asString = (v: unknown): string => (typeof v === 'string' ? v : v == null ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v));

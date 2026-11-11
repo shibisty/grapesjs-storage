@@ -9,7 +9,7 @@ const messages: StorageLabels = {
   noTemplates: 'Još nema predložaka: napravite jedan i označite njegove elemente kao polja.',
   noEntries: 'Još nema unosa.',
   fieldsOf: 'Polja predloška %s',
-  noFields: 'Još nema polja: odaberite element i dajte mu ime polja u postavkama.',
+  noFields: 'Još nema polja: upišite {{name}} u tekst ili odaberite element i dajte mu naziv polja u postavkama.',
   fieldName: 'Ime polja',
   fieldType: 'Vrsta polja',
   fieldLabel: 'Oznaka polja',
@@ -59,6 +59,19 @@ const messages: StorageLabels = {
   overwrite: 'Zadrži moju',
   search: 'Pretraga',
   close: 'Zatvori',
+  fields: 'Polja',
+  inList: 'Lista',
+  entryOwn: 'Ovaj unos',
+  entry_name: 'Naziv unosa',
+  entry_slug: 'Adresa (slug)',
+  entry_url: 'Link na unos',
+  entry_published_at: 'Datum objave',
+  newField: 'Novo polje…',
+  newFieldName: 'Naziv novog polja (a-z, 0-9, _):',
+  insertField: 'Umetni polje',
+  copied: 'Kopirano u međuspremnik',
+  placeholderHint: 'Upišite {{name}} u tekst, link ili adresu slike da dodate polje; {{entry.slug}} i {{entry.name}} prikazuju podatke samog unosa.',
+  warn_unknownPlaceholder: 'Nepoznat čuvar mjesta: %s',
 };
 
 export default messages;

@@ -46,6 +46,8 @@ export interface StorageApi {
   /** The open entry, its values and what stops publishing. */
   current(): { entry: Entry; template: Template | null; values: Values; problems: ValueProblem[] } | null;
   setValue(name: string, value: unknown): void;
+  /** Renames the open entry or changes its address. */
+  setMeta(patch: { name?: string; slug?: string }): void;
   publish(): Promise<Entry>;
   removeEntry(id: string): Promise<void>;
   /** Writes pending changes now. */

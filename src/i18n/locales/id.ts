@@ -9,7 +9,7 @@ const messages: StorageLabels = {
   noTemplates: 'Belum ada templat: buat satu dan tandai elemennya sebagai bidang.',
   noEntries: 'Belum ada entri.',
   fieldsOf: 'Bidang %s',
-  noFields: 'Belum ada bidang: pilih elemen dan beri nama bidang di pengaturannya.',
+  noFields: 'Belum ada bidang: ketik {{name}} di teks, atau pilih elemen lalu beri nama bidang di pengaturannya.',
   fieldName: 'Nama bidang',
   fieldType: 'Jenis bidang',
   fieldLabel: 'Label bidang',
@@ -59,6 +59,19 @@ const messages: StorageLabels = {
   overwrite: 'Pertahankan milik saya',
   search: 'Cari',
   close: 'Tutup',
+  fields: 'Bidang',
+  inList: 'Daftar',
+  entryOwn: 'Entri ini',
+  entry_name: 'Nama entri',
+  entry_slug: 'Alamat (slug)',
+  entry_url: 'Tautan ke entri',
+  entry_published_at: 'Tanggal terbit',
+  newField: 'Bidang baru…',
+  newFieldName: 'Nama bidang baru (a-z, 0-9, _):',
+  insertField: 'Sisipkan bidang',
+  copied: 'Disalin ke papan klip',
+  placeholderHint: 'Ketik {{name}} di teks, tautan, atau alamat gambar untuk menambah bidang; {{entry.slug}} dan {{entry.name}} menampilkan data entri itu sendiri.',
+  warn_unknownPlaceholder: 'Placeholder tidak dikenal: %s',
 };
 
 export default messages;

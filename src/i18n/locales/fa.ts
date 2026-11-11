@@ -9,7 +9,7 @@ const messages: StorageLabels = {
   noTemplates: 'هنوز قالبی نیست: یکی بسازید و عناصرش را به‌عنوان فیلد علامت بزنید.',
   noEntries: 'هنوز مدخلی نیست.',
   fieldsOf: 'فیلدهای %s',
-  noFields: 'هنوز فیلدی نیست: عنصری را انتخاب کنید و در تنظیماتش نام فیلد بدهید.',
+  noFields: 'هنوز فیلدی نیست: {{name}} را در یک متن بنویسید یا عنصری را برگزینید و در تنظیماتش نام فیلد بدهید.',
   fieldName: 'نام فیلد',
   fieldType: 'نوع فیلد',
   fieldLabel: 'برچسب فیلد',
@@ -59,6 +59,19 @@ const messages: StorageLabels = {
   overwrite: 'نسخهٔ من را نگه دار',
   search: 'جستجو',
   close: 'بستن',
+  fields: 'فیلدها',
+  inList: 'فهرست',
+  entryOwn: 'این مورد',
+  entry_name: 'نام مورد',
+  entry_slug: 'نشانی (slug)',
+  entry_url: 'پیوند به مورد',
+  entry_published_at: 'تاریخ انتشار',
+  newField: 'فیلد تازه…',
+  newFieldName: 'نام فیلد تازه (a-z، 0-9، _):',
+  insertField: 'درج فیلد',
+  copied: 'در بریده‌دان کپی شد',
+  placeholderHint: 'برای افزودن فیلد، {{name}} را در متن، پیوند یا نشانی تصویر بنویسید؛ {{entry.slug}} و {{entry.name}} داده‌های خود مورد را نشان می‌دهند.',
+  warn_unknownPlaceholder: 'جانگهدار ناشناخته: %s',
 };
 
 export default messages;

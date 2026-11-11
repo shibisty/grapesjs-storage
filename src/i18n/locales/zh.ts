@@ -9,7 +9,7 @@ const messages: StorageLabels = {
   noTemplates: '还没有模板：创建一个并将其元素标记为字段。',
   noEntries: '还没有条目。',
   fieldsOf: '%s 的字段',
-  noFields: '还没有字段：选择一个元素并在设置中为其指定字段名。',
+  noFields: '还没有字段：在文本中输入 {{name}}，或选中元素并在其设置中填写字段名。',
   fieldName: '字段名',
   fieldType: '字段类型',
   fieldLabel: '字段标签',
@@ -59,6 +59,19 @@ const messages: StorageLabels = {
   overwrite: '保留我的',
   search: '搜索',
   close: '关闭',
+  fields: '字段',
+  inList: '列表',
+  entryOwn: '本条目',
+  entry_name: '条目名称',
+  entry_slug: '地址（slug）',
+  entry_url: '条目链接',
+  entry_published_at: '发布日期',
+  newField: '新字段…',
+  newFieldName: '新字段名称（a-z、0-9、_）：',
+  insertField: '插入字段',
+  copied: '已复制到剪贴板',
+  placeholderHint: '在文本、链接或图片地址中输入 {{name}} 即可添加字段；{{entry.slug}} 和 {{entry.name}} 显示条目本身的数据。',
+  warn_unknownPlaceholder: '未知占位符：%s',
 };
 
 export default messages;

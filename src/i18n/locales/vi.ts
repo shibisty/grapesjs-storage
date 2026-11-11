@@ -9,7 +9,7 @@ const messages: StorageLabels = {
   noTemplates: 'Chưa có mẫu: hãy tạo một mẫu và đánh dấu các phần tử của nó là trường.',
   noEntries: 'Chưa có mục nào.',
   fieldsOf: 'Các trường của %s',
-  noFields: 'Chưa có trường: chọn một phần tử và đặt tên trường cho nó trong phần cài đặt.',
+  noFields: 'Chưa có trường: gõ {{name}} trong văn bản, hoặc chọn một phần tử và đặt tên trường trong phần cài đặt.',
   fieldName: 'Tên trường',
   fieldType: 'Loại trường',
   fieldLabel: 'Nhãn trường',
@@ -59,6 +59,19 @@ const messages: StorageLabels = {
   overwrite: 'Giữ bản của tôi',
   search: 'Tìm kiếm',
   close: 'Đóng',
+  fields: 'Trường',
+  inList: 'Danh sách',
+  entryOwn: 'Mục này',
+  entry_name: 'Tên mục',
+  entry_slug: 'Địa chỉ (slug)',
+  entry_url: 'Liên kết đến mục',
+  entry_published_at: 'Ngày xuất bản',
+  newField: 'Trường mới…',
+  newFieldName: 'Tên trường mới (a-z, 0-9, _):',
+  insertField: 'Chèn trường',
+  copied: 'Đã sao chép vào bảng nhớ tạm',
+  placeholderHint: 'Gõ {{name}} trong văn bản, liên kết hoặc địa chỉ ảnh để thêm trường; {{entry.slug}} và {{entry.name}} hiển thị dữ liệu của chính mục.',
+  warn_unknownPlaceholder: 'Phần giữ chỗ không xác định: %s',
 };
 
 export default messages;

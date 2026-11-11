@@ -9,7 +9,7 @@ const messages: StorageLabels = {
   noTemplates: 'Шаблонів поки немає: створіть шаблон і позначте його елементи як поля.',
   noEntries: 'Записів поки немає.',
   fieldsOf: 'Поля шаблону %s',
-  noFields: 'Полів поки немає: виберіть елемент і задайте йому ім’я поля в налаштуваннях.',
+  noFields: 'Полів поки немає: напишіть {{name}} у тексті або виділіть елемент і задайте йому ім’я поля в налаштуваннях.',
   fieldName: 'Ім’я поля',
   fieldType: 'Тип поля',
   fieldLabel: 'Підпис поля',
@@ -59,6 +59,19 @@ const messages: StorageLabels = {
   overwrite: 'Залишити мою',
   search: 'Пошук',
   close: 'Закрити',
+  fields: 'Поля',
+  inList: 'Список',
+  entryOwn: 'Цей запис',
+  entry_name: 'Назва запису',
+  entry_slug: 'Адреса (slug)',
+  entry_url: 'Посилання на запис',
+  entry_published_at: 'Дата публікації',
+  newField: 'Нове поле…',
+  newFieldName: 'Ім’я нового поля (a-z, 0-9, _):',
+  insertField: 'Вставити поле',
+  copied: 'Скопійовано до буфера обміну',
+  placeholderHint: 'Напишіть {{name}} у тексті, посиланні чи адресі зображення — з’явиться поле; {{entry.slug}} і {{entry.name}} — дані самого запису.',
+  warn_unknownPlaceholder: 'Невідомий плейсхолдер: %s',
 };
 
 export default messages;

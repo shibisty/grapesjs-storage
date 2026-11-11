@@ -9,7 +9,7 @@ const messages: StorageLabels = {
   noTemplates: 'Ainda não há modelos: crie um e marque seus elementos como campos.',
   noEntries: 'Ainda não há entradas.',
   fieldsOf: 'Campos de %s',
-  noFields: 'Ainda não há campos: selecione um elemento e dê a ele um nome de campo nas configurações.',
+  noFields: 'Ainda sem campos: escreva {{name}} num texto ou selecione um elemento e dê-lhe um nome de campo nas definições.',
   fieldName: 'Nome do campo',
   fieldType: 'Tipo do campo',
   fieldLabel: 'Rótulo do campo',
@@ -59,6 +59,19 @@ const messages: StorageLabels = {
   overwrite: 'Manter a minha',
   search: 'Pesquisar',
   close: 'Fechar',
+  fields: 'Campos',
+  inList: 'Lista',
+  entryOwn: 'Esta entrada',
+  entry_name: 'Nome da entrada',
+  entry_slug: 'Endereço (slug)',
+  entry_url: 'Link para a entrada',
+  entry_published_at: 'Data de publicação',
+  newField: 'Novo campo…',
+  newFieldName: 'Nome do novo campo (a-z, 0-9, _):',
+  insertField: 'Inserir campo',
+  copied: 'Copiado para a área de transferência',
+  placeholderHint: 'Escreva {{name}} num texto, link ou endereço de imagem para criar um campo; {{entry.slug}} e {{entry.name}} mostram os dados da entrada.',
+  warn_unknownPlaceholder: 'Marcador desconhecido: %s',
 };
 
 export default messages;

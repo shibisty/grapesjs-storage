@@ -9,7 +9,7 @@ const messages: StorageLabels = {
   noTemplates: 'Nog geen sjablonen: maak er een en markeer de elementen als velden.',
   noEntries: 'Nog geen items.',
   fieldsOf: 'Velden van %s',
-  noFields: 'Nog geen velden: selecteer een element en geef het een veldnaam in de instellingen.',
+  noFields: 'Nog geen velden: typ {{name}} in een tekst of selecteer een element en geef het een veldnaam in de instellingen.',
   fieldName: 'Veldnaam',
   fieldType: 'Veldtype',
   fieldLabel: 'Veldlabel',
@@ -59,6 +59,19 @@ const messages: StorageLabels = {
   overwrite: 'Mijn versie houden',
   search: 'Zoeken',
   close: 'Sluiten',
+  fields: 'Velden',
+  inList: 'Lijst',
+  entryOwn: 'Dit item',
+  entry_name: 'Naam van het item',
+  entry_slug: 'Adres (slug)',
+  entry_url: 'Link naar het item',
+  entry_published_at: 'Publicatiedatum',
+  newField: 'Nieuw veld…',
+  newFieldName: 'Naam van het nieuwe veld (a-z, 0-9, _):',
+  insertField: 'Veld invoegen',
+  copied: 'Gekopieerd naar het klembord',
+  placeholderHint: 'Typ {{name}} in een tekst, link of afbeeldingsadres om een veld te maken; {{entry.slug}} en {{entry.name}} tonen de gegevens van het item.',
+  warn_unknownPlaceholder: 'Onbekende plaatshouder: %s',
 };
 
 export default messages;

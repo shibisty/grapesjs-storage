@@ -56,7 +56,7 @@ export function fieldName(raw: string): string {
 
 /** What a field problem is about, for the field panel. */
 export interface FieldWarning {
-  code: 'duplicate' | 'invalidName' | 'noOptions' | 'emptyList' | 'nestedList' | 'unknownType';
+  code: 'duplicate' | 'invalidName' | 'noOptions' | 'emptyList' | 'nestedList' | 'unknownType' | 'unknownPlaceholder';
   /** Path of the field: `title`, `specs.name`. */
   field: string;
 }
@@ -68,6 +68,10 @@ export interface FieldWarning {
 export interface FieldNode {
   attrs: Record<string, unknown>;
   children: FieldNode[];
+  /** Lower-case tag name (script and style are not searched for placeholders). */
+  tag?: string;
+  /** The node's own text (a text node's content), searched for placeholders. */
+  text?: string;
 }
 
 const truthy = (v: unknown): boolean => v === true || v === '' || v === 'true' || v === 'required';
@@ -105,7 +109,25 @@ export function listItem(node: FieldNode): FieldNode | undefined {
  * them. A list's item fields are collected from its repeated child; fields
  * inside a field that is not a list are ignored (its content is the value).
  */
-export function collectFields(root: FieldNode[]): { fields: Field[]; warnings: FieldWarning[] } {
+export interface Collected {
+  fields: Field[];
+  warnings: FieldWarning[];
+  /** Paths of the fields only placeholders declare (`price`, `specs.weight`): their settings are not on any element. */
+  placeholders: string[];
+}
+
+/**
+ * The fields of a template, in document order, with what is wrong with
+ * them. A list's item fields are collected from its repeated child; fields
+ * inside a field that is not a list are ignored (its content is the value).
+ *
+ * Placeholders (`{{price}}` in a text or an href, src, alt, title,
+ * aria-label) declare fields too: after the elements' fields, a text field
+ * for every name no element declares, with what `settings` keeps for its
+ * path (type, format, label…; a list's item fields as `specs.weight`).
+ * Inside a list they are the item's fields.
+ */
+export function collectFields(root: FieldNode[], settings: Map<string, Partial<Field>> = new Map()): Collected {
   const warnings: FieldWarning[] = [];
   const walk = (nodes: FieldNode[], prefix: string, inList: boolean, out: Field[], seen: Set<string>): void => {
     for (const n of nodes) {
@@ -147,13 +169,84 @@ export function collectFields(root: FieldNode[]): { fields: Field[]; warnings: F
   };
   const fields: Field[] = [];
   walk(root, '', false, fields, new Set());
-  return { fields, warnings };
+
+  // Placeholders: fields no element declares.
+  const found = placeholdersOf(root);
+  const placeholders: string[] = [];
+  const add = (out: Field[], name: string, path: string): void => {
+    if (out.some((f) => f.name === name)) return;
+    const f: Field = { name, type: 'text' };
+    const s = settings.get(path);
+    if (s) {
+      if (s.type && FIELD_TYPES.includes(s.type) && s.type !== 'list') f.type = s.type;
+      if (s.label) f.label = s.label;
+      if (s.required) f.required = true;
+      if (s.format) f.format = s.format;
+      if (s.options?.length) f.options = [...s.options];
+      if (s.default !== undefined && s.default !== '') f.default = s.default;
+    }
+    out.push(f);
+    placeholders.push(path);
+  };
+  found.top.forEach((name) => add(fields, name, name));
+  found.lists.forEach((names, list) => {
+    const lf = fields.find((f) => f.name === list && f.type === 'list');
+    if (!lf) return;
+    lf.fields = lf.fields || [];
+    names.forEach((name) => add(lf.fields!, name, `${list}.${name}`));
+  });
+  found.unknown.forEach((p) => warnings.push({ code: 'unknownPlaceholder', field: p }));
+  const kept = warnings.filter((w) => !(w.code === 'emptyList' && fields.find((f) => f.name === w.field)?.fields?.length));
+  return { fields, warnings: kept, placeholders };
+}
+
+const PLACEHOLDER_RE = /\{\{\s*((?:entry\.)?[a-z][a-z0-9_]{0,63})\s*\}\}/g;
+const PLACEHOLDER_ATTR_NAMES = ['href', 'src', 'alt', 'title', 'aria-label'];
+const ENTRY_KEYS = ['name', 'slug', 'url', 'published_at'];
+
+/** The placeholder names in a string, in order (`entry.*` included). */
+export function placeholderNames(s: string): string[] {
+  const out: string[] = [];
+  for (const m of String(s || '').matchAll(PLACEHOLDER_RE)) out.push(m[1]);
+  return out;
+}
+
+/** Placeholders of a tree: top-level names, names inside each list, unknown `entry.*`. */
+function placeholdersOf(root: FieldNode[]): { top: string[]; lists: Map<string, string[]>; unknown: string[] } {
+  const top: string[] = [];
+  const lists = new Map<string, string[]>();
+  const unknown: string[] = [];
+  const note = (s: string, into: string[]): void => {
+    for (const name of placeholderNames(s)) {
+      if (name.startsWith('entry.')) {
+        if (!ENTRY_KEYS.includes(name.slice(6)) && !unknown.includes(name)) unknown.push(name);
+      } else if (!into.includes(name)) into.push(name);
+    }
+  };
+  const walk = (nodes: FieldNode[], into: string[], inList: boolean): void => {
+    for (const n of nodes) {
+      if (n.tag === 'script' || n.tag === 'style') continue;
+      if (n.text) note(n.text, into);
+      for (const a of PLACEHOLDER_ATTR_NAMES) if (typeof n.attrs[a] === 'string') note(n.attrs[a] as string, into);
+      const f = inList ? null : fieldOf(n.attrs);
+      if (f && f.type === 'list' && NAME_RE.test(f.name)) {
+        const names = lists.get(f.name) || [];
+        lists.set(f.name, names);
+        walk(n.children, names, true);
+      } else walk(n.children, into, inList);
+    }
+  };
+  walk(root, top, false);
+  return { top, lists, unknown };
 }
 
 /** A GrapesJS component as a `FieldNode` (read-only, live). */
 export function componentNode(c: any): FieldNode {
+  const content = c?.get?.('content');
   return {
     attrs: (c?.getAttributes?.() as Record<string, unknown>) || {},
+    tag: String(c?.get?.('tagName') || '').toLowerCase(),
+    text: typeof content === 'string' ? content : '',
     get children() {
       const kids = c?.components?.();
       return kids ? kids.map((k: any) => componentNode(k)) : [];
@@ -167,6 +260,11 @@ export function elementNode(el: Element): FieldNode {
   for (const a of Array.from(el.attributes)) attrs[a.name] = a.value;
   return {
     attrs,
+    tag: el.tagName.toLowerCase(),
+    text: Array.from(el.childNodes)
+      .filter((n) => n.nodeType === Node.TEXT_NODE)
+      .map((n) => n.nodeValue || '')
+      .join(' '),
     get children() {
       return Array.from(el.children).map(elementNode);
     },
@@ -174,10 +272,13 @@ export function elementNode(el: Element): FieldNode {
 }
 
 /** The fields of a template's HTML (outside the editor). */
-export function fieldsOfHtml(html: string): { fields: Field[]; warnings: FieldWarning[] } {
+export function fieldsOfHtml(html: string, settings?: Map<string, Partial<Field>>): Collected {
   const tpl = document.createElement('template');
   tpl.innerHTML = html;
-  return collectFields(Array.from(tpl.content.children).map(elementNode));
+  // Top-level text too: a wrapper holds the fragment.
+  const holder = document.createElement('div');
+  holder.append(...Array.from(tpl.content.childNodes));
+  return collectFields([elementNode(holder)], settings);
 }
 
 /** Are two field lists the same (to save only real changes)? */
@@ -244,4 +345,14 @@ export function checkValues(fields: Field[], values: Values, prefix = ''): Value
 export function emptyValue(f: Field): unknown {
   if (f.default !== undefined) return f.type === 'number' ? Number(f.default) : f.type === 'boolean' ? truthy(f.default) : f.default;
   return f.type === 'list' ? [] : f.type === 'boolean' ? false : undefined;
+}
+
+/** A field list as settings by path (`price`, `specs.weight`), for `collectFields`. */
+export function settingsOf(fields: Field[] | null | undefined): Map<string, Partial<Field>> {
+  const m = new Map<string, Partial<Field>>();
+  (fields || []).forEach((f) => {
+    m.set(f.name, f);
+    (f.fields || []).forEach((s) => m.set(`${f.name}.${s.name}`, s));
+  });
+  return m;
 }

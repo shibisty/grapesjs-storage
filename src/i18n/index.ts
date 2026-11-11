@@ -94,7 +94,8 @@ export function createTranslator(editor: Editor, overrides: Partial<StorageLabel
     if (typeof own === 'string' && own) return own;
     let msg: unknown;
     try {
-      msg = editor.I18n?.t(`${I18N_NS}.${key}`);
+      // GrapesJS fills {param} in messages: {{name}} (a placeholder shown to the user) keeps its braces.
+      msg = editor.I18n?.t(`${I18N_NS}.${key}`, { params: { name: '{name}' } } as never);
     } catch {
       msg = undefined;
     }

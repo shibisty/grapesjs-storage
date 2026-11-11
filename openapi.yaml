@@ -290,6 +290,10 @@ components:
         values: { $ref: "#/components/schemas/Values" }
         version: { type: [string, integer] }
         updated_at: { type: string, format: date-time }
+        published_at:
+          type: [string, "null"]
+          format: date-time
+          description: When it was last published; `{{entry.published_at}}` in a template shows its date.
       required: [id, template_id, name]
     EntryWrite:
       type: object

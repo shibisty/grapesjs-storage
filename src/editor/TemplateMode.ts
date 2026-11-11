@@ -1,20 +1,28 @@
 import type { Editor, ProjectData } from 'grapesjs';
 import { EVENTS } from '../events';
-import { collectFields, componentNode, type Field, type FieldWarning, sameFields } from '../fields';
+import { collectFields, componentNode, type Field, type FieldWarning, sameFields, settingsOf } from '../fields';
 import type { ContentStore } from '../store/types';
 import { report } from '../utils';
 
 /**
  * A template is open: its fields are collected from the canvas (the
- * `data-field*` attributes) after every change and saved when they
- * differ. When the plugin owns the design (no grapesjs-pages), the
- * project is saved with them.
+ * `data-field*` attributes and the `{{name}}` placeholders) after every
+ * change and saved when they differ. When the plugin owns the design (no
+ * grapesjs-pages), the project is saved with them.
+ *
+ * A placeholder's field has no element to keep its settings: its type,
+ * format, label… live in the saved field list, changed with
+ * `setFieldSettings`.
  */
 export class TemplateMode {
   id: string | null = null;
   name = '';
   fields: Field[] = [];
   warnings: FieldWarning[] = [];
+  /** Paths of the fields only placeholders declare (`price`, `specs.weight`). */
+  placeholders: string[] = [];
+  /** Settings of placeholder fields by path: from the saved fields, then `setFieldSettings`. */
+  private settings = new Map<string, Partial<Field>>();
   /** Last saved, to write only real changes. */
   private saved: Field[] | null = null;
   private timer: ReturnType<typeof setTimeout> | null = null;
@@ -42,6 +50,7 @@ export class TemplateMode {
     const t = await this.store.getTemplate(id).catch((e) => (report(e), undefined));
     if (this.id !== id) return; // switched meanwhile
     this.saved = t?.fields || null;
+    this.settings = settingsOf(this.saved);
     if (load) {
       this.muted = true;
       try {
@@ -65,6 +74,8 @@ export class TemplateMode {
     this.id = null;
     this.fields = [];
     this.warnings = [];
+    this.placeholders = [];
+    this.settings = new Map();
     this.saved = null;
     this.editor.trigger(EVENTS.template, null);
   }
@@ -72,11 +83,25 @@ export class TemplateMode {
   /** Reads the fields from the canvas now. */
   collect(): { fields: Field[]; warnings: FieldWarning[] } {
     const wrapper = this.editor.getWrapper();
-    const r = collectFields(wrapper ? wrapper.components().map((c: any) => componentNode(c)) : []);
+    const r = collectFields(wrapper ? wrapper.components().map((c: any) => componentNode(c)) : [], this.settings);
     this.fields = r.fields;
     this.warnings = r.warnings;
+    this.placeholders = r.placeholders;
     this.editor.trigger(EVENTS.fields, r);
     return r;
+  }
+
+  /**
+   * Changes a placeholder field's settings (`price` → number, `0.00`).
+   * Fields of elements keep theirs in their attributes (the traits).
+   */
+  setFieldSettings(path: string, patch: Partial<Pick<Field, 'type' | 'label' | 'required' | 'format' | 'options'>>): void {
+    if (!this.active) return;
+    const next = { ...(this.settings.get(path) || {}), ...patch };
+    if (patch.required === false) delete next.required;
+    this.settings.set(path, next);
+    this.collect();
+    this.schedule();
   }
 
   /** Editor change handler: collect and save, debounced. */

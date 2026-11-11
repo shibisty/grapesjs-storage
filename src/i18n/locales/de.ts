@@ -9,7 +9,7 @@ const messages: StorageLabels = {
   noTemplates: 'Noch keine Vorlagen: Erstellen Sie eine und markieren Sie ihre Elemente als Felder.',
   noEntries: 'Noch keine Einträge.',
   fieldsOf: 'Felder von %s',
-  noFields: 'Noch keine Felder: Wählen Sie ein Element und geben Sie ihm in den Einstellungen einen Feldnamen.',
+  noFields: 'Noch keine Felder: schreiben Sie {{name}} in einen Text oder wählen Sie ein Element und geben Sie ihm in den Einstellungen einen Feldnamen.',
   fieldName: 'Feldname',
   fieldType: 'Feldtyp',
   fieldLabel: 'Feldbeschriftung',
@@ -59,6 +59,19 @@ const messages: StorageLabels = {
   overwrite: 'Meine behalten',
   search: 'Suchen',
   close: 'Schließen',
+  fields: 'Felder',
+  inList: 'Liste',
+  entryOwn: 'Dieser Eintrag',
+  entry_name: 'Name des Eintrags',
+  entry_slug: 'Adresse (Slug)',
+  entry_url: 'Link zum Eintrag',
+  entry_published_at: 'Veröffentlichungsdatum',
+  newField: 'Neues Feld…',
+  newFieldName: 'Name des neuen Felds (a-z, 0-9, _):',
+  insertField: 'Feld einfügen',
+  copied: 'In die Zwischenablage kopiert',
+  placeholderHint: 'Schreiben Sie {{name}} in einen Text, einen Link oder eine Bildadresse, um ein Feld anzulegen; {{entry.slug}} und {{entry.name}} zeigen die Daten des Eintrags.',
+  warn_unknownPlaceholder: 'Unbekannter Platzhalter: %s',
 };
 
 export default messages;

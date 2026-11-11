@@ -53,6 +53,29 @@ list's fields (one level). The *Content* panel shows the template's fields in or
 warnings: a name used twice, a name that is not `a-z0-9_`, a choice without options, a list
 without item fields, a list in a list. The fields are saved whenever they change.
 
+**Placeholders.** The quicker way: write `{{name}}` in a template's text, or in a link's or
+an image's address (`href`, `src`, `alt`, `title`, `aria-label`). Every name no element declares
+becomes a text field; its type, format, label and *required* are set in the *Content* panel and
+kept with the template's fields. While a text is being edited, the rich text toolbar's **{…}**
+button (and *Insert field* in the panel) inserts one: a field, a new field, or the entry's own:
+
+```html
+<h1>{{entry.name}}</h1>
+<p>Price: {{price}} UAH</p>                        <!-- price: number, 0.00 → 49.50 -->
+<a href="{{entry.url}}"><img src="{{photo}}" alt="{{photo}}"></a>   <!-- photo: image -->
+<ul data-field="specs" data-field-type="list"><li>{{name}}: {{value}}</li></ul>
+```
+
+| Placeholder | Shows |
+| --- | --- |
+| `{{field}}` | the value as text: numbers and dates by the format, rich text without its tags, an image's URL in `src` and its alt text elsewhere, a link's URL in `href` and its label elsewhere; yes/no and lists show nothing (make them elements); nothing without a value |
+| `{{entry.name}}`, `{{entry.slug}}`, `{{entry.url}}` | the entry's name and address |
+| `{{entry.published_at}}` | the date it was published (`YYYY-MM-DD`) |
+
+Inside a list's item, placeholders are the item's fields. An address that ends up unsafe
+(`javascript:`) or empty drops the attribute. `script` and `style` keep their text. Anything else
+in braces (`{{Title}}`, `{{ a b }}`) stays as it is.
+
 **Entries.** *Content* → a template → its entries → **+**. The entry opens on the template's
 design, locked; its values are rendered into it:
 
@@ -104,13 +127,14 @@ createEntry(templateId, { name?, slug?, values? }): Promise<Entry>
 closeEntry()
 current(): { entry, template, values, problems } | null
 setValue(name, value)
+setMeta({ name?, slug? })
 publish(): Promise<Entry>
 removeEntry(id)
 flush()
 ```
 
-Pure helpers: `render`, `sanitizeHtml`, `collectFields`, `fieldsOfHtml`, `checkValues`,
-`formatNumber`, `formatDate`. Events: `storage:template`, `storage:fields`, `storage:entry`,
+Pure helpers: `render(html, values, fields, entry?)`, `sanitizeHtml`, `collectFields`,
+`fieldsOfHtml`, `placeholderNames`, `checkValues`, `formatNumber`, `formatDate`. Events: `storage:template`, `storage:fields`, `storage:entry`,
 `storage:values`, `storage:saved`, `storage:state`, `storage:change`. Commands: `storage:open`,
 `storage:toggle`.
 

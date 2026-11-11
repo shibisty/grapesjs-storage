@@ -9,7 +9,7 @@ const messages: StorageLabels = {
   noTemplates: 'Henüz şablon yok: bir şablon oluşturun ve öğelerini alan olarak işaretleyin.',
   noEntries: 'Henüz kayıt yok.',
   fieldsOf: '%s alanları',
-  noFields: 'Henüz alan yok: bir öğe seçin ve ayarlarında ona bir alan adı verin.',
+  noFields: 'Henüz alan yok: bir metne {{name}} yazın ya da bir öğe seçip ayarlarında ona bir alan adı verin.',
   fieldName: 'Alan adı',
   fieldType: 'Alan türü',
   fieldLabel: 'Alan etiketi',
@@ -59,6 +59,19 @@ const messages: StorageLabels = {
   overwrite: 'Benimkini koru',
   search: 'Ara',
   close: 'Kapat',
+  fields: 'Alanlar',
+  inList: 'Liste',
+  entryOwn: 'Bu kayıt',
+  entry_name: 'Kaydın adı',
+  entry_slug: 'Adres (slug)',
+  entry_url: 'Kayda bağlantı',
+  entry_published_at: 'Yayın tarihi',
+  newField: 'Yeni alan…',
+  newFieldName: 'Yeni alanın adı (a-z, 0-9, _):',
+  insertField: 'Alan ekle',
+  copied: 'Panoya kopyalandı',
+  placeholderHint: 'Alan eklemek için bir metne, bağlantıya veya görsel adresine {{name}} yazın; {{entry.slug}} ve {{entry.name}} kaydın kendi bilgilerini gösterir.',
+  warn_unknownPlaceholder: 'Bilinmeyen yer tutucu: %s',
 };
 
 export default messages;

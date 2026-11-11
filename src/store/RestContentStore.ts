@@ -30,6 +30,7 @@ interface WireEntry {
   values?: Values;
   version?: string | number;
   updated_at?: string;
+  published_at?: string | null;
 }
 
 const template = (w: WireTemplate): Template => ({
@@ -50,6 +51,7 @@ const entry = (w: WireEntry): Entry => ({
   ...(w.values !== undefined ? { values: w.values } : {}),
   version: w.version,
   updatedAt: w.updated_at,
+  ...(w.published_at ? { publishedAt: w.published_at } : {}),
 });
 
 /** The contract in openapi.yaml over `fetch`. */

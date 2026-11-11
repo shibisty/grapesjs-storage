@@ -45,6 +45,14 @@ export const CSS = `
 .gjss.gjss-inline{width:100%;height:100%;overflow:hidden;background:var(--gjs-primary-color,#444)}
 .gjss.gjss-floating{position:absolute;top:0;right:0;bottom:0;width:300px;z-index:50;box-shadow:-2px 0 8px rgba(0,0,0,.35);background:var(--gjs-primary-color,#444)}
 .gjss-toggle{position:absolute;top:8px;right:48px;z-index:60;background:var(--gjs-primary-color,#444);color:var(--gjs-font-color,#ddd);border:1px solid rgba(255,255,255,.2);border-radius:4px;padding:6px 10px;cursor:pointer}
+.gjss-fieldset{display:flex;flex-direction:column;gap:2px;flex:1;padding:0 0 6px}
+.gjss-fieldset .gjss-input{margin:0}
+.gjss-menu{position:absolute;z-index:1000;min-width:220px;max-height:320px;overflow:auto;padding:4px 0;background:var(--gjs-primary-color,#444);color:var(--gjs-font-color,#ddd);border:1px solid rgba(255,255,255,.2);border-radius:4px;box-shadow:0 4px 14px rgba(0,0,0,.4);font:12px/1.3 var(--gjs-main-font,Helvetica,sans-serif)}
+.gjss-menu-group{padding:6px 10px 2px;font-size:10px;text-transform:uppercase;letter-spacing:.06em;opacity:.6}
+.gjss-menu-item{display:flex;gap:10px;justify-content:space-between;width:100%;padding:5px 10px;background:none;border:0;color:inherit;cursor:pointer;text-align:start;font:inherit}
+.gjss-menu-item:hover{background:rgba(255,255,255,.1)}
+.gjss-menu-item code{opacity:.7}
+.gjss-menu-new{border-top:1px solid rgba(255,255,255,.12);margin-top:4px}
 `;
 
 export function injectCss(doc: Document = document): void {
