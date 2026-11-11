@@ -1,0 +1,301 @@
+openapi: 3.1.0
+info:
+  title: grapesjs-storage REST contract
+  version: 0.1.0
+  license:
+    name: MIT
+    identifier: MIT
+  description: |
+    What `RestContentStore` expects from a server. Paths are relative to the base URL the plugin
+    is given (`store: new RestContentStore({ url })`); authentication is the host's business (the
+    `headers` option, cookies with `credentials`).
+
+    - **Templates** carry their `fields` (what the editor collects from `data-field*` attributes).
+      A template write has no version: the fields follow from the design, the last write wins.
+      `data` (the GrapesJS project) is sent only when the plugin owns the design (no
+      grapesjs-pages next to it); a write without `data` keeps it.
+    - **Entries** are values for a template's fields under a name and an address (`slug`). They
+      have a `version` (also the `ETag`); `If-Match: "7"` makes a write, delete or publish
+      conditional (`412` when the entry moved on). A first write creates the entry (`201`).
+    - **Values** are by field name. A write sets the keys it sends; `null` deletes a key; keys not
+      sent stay.
+    - Errors are `{"error": "…"}`; invalid input `422` with `{"errors": {"field": ["…"]}}`.
+
+    luna-pages implements this contract under `/v1/content` (and `/internal/v1/apps/{app}/content`).
+servers:
+  - url: https://cms.example.org/api/content
+    description: Any base URL
+# Authentication is up to the host (a session cookie, a key added by its backend): none here.
+security:
+  - {}
+tags:
+  - name: templates
+    description: Templates and their fields.
+  - name: entries
+    description: Entries of templates.
+paths:
+  /templates:
+    get:
+      tags: [templates]
+      summary: List templates
+      operationId: listTemplates
+      description: Every template with its fields, without the design.
+      responses:
+        "200":
+          description: The templates.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: "#/components/schemas/Template" } }
+                required: [items]
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /templates/{id}:
+    parameters:
+      - { $ref: "#/components/parameters/ID" }
+    get:
+      tags: [templates]
+      summary: Get a template
+      operationId: getTemplate
+      description: The template with its design (`data`) when the server has one.
+      responses:
+        "200":
+          description: The template.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TemplateWithData" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [templates]
+      summary: Save a template's fields
+      operationId: saveTemplate
+      description: Replaces the fields; `name` is required to create one; `data` replaces the design when sent.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TemplateWrite" }
+      responses:
+        "200":
+          description: Saved.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Template" }
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Template" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/Invalid" }
+  /entries:
+    get:
+      tags: [entries]
+      summary: List entries
+      operationId: listEntries
+      description: Entries of a template (all without `template`); `values` may be left out.
+      parameters:
+        - name: template
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: The entries.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: "#/components/schemas/Entry" } }
+                required: [items]
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /entries/{id}:
+    parameters:
+      - { $ref: "#/components/parameters/ID" }
+    get:
+      tags: [entries]
+      summary: Get an entry
+      operationId: getEntry
+      responses:
+        "200":
+          description: The entry with its values.
+          headers: { ETag: { $ref: "#/components/headers/ETag" } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Entry" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [entries]
+      summary: Create or replace an entry
+      operationId: putEntry
+      parameters:
+        - { $ref: "#/components/parameters/IfMatch" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EntryWrite" }
+      responses:
+        "200":
+          description: Saved.
+          headers: { ETag: { $ref: "#/components/headers/ETag" } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Entry" }
+        "201":
+          description: Created.
+          headers: { ETag: { $ref: "#/components/headers/ETag" } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Entry" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "412": { $ref: "#/components/responses/Precondition" }
+        "422": { $ref: "#/components/responses/Invalid" }
+    delete:
+      tags: [entries]
+      summary: Delete an entry
+      operationId: deleteEntry
+      parameters:
+        - { $ref: "#/components/parameters/IfMatch" }
+      responses:
+        "204": { description: Deleted. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "412": { $ref: "#/components/responses/Precondition" }
+  /entries/{id}/publish:
+    parameters:
+      - { $ref: "#/components/parameters/ID" }
+    post:
+      tags: [entries]
+      summary: Publish an entry
+      operationId: publishEntry
+      description: Optional for a server; the values go live (the server checks them against the fields).
+      parameters:
+        - { $ref: "#/components/parameters/IfMatch" }
+      responses:
+        "200":
+          description: Live.
+          headers: { ETag: { $ref: "#/components/headers/ETag" } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Entry" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "412": { $ref: "#/components/responses/Precondition" }
+        "422": { $ref: "#/components/responses/Invalid" }
+components:
+  parameters:
+    ID:
+      name: id
+      in: path
+      required: true
+      description: The editor makes ids (UUIDs).
+      schema: { type: string }
+    IfMatch:
+      name: If-Match
+      in: header
+      description: The version the edit is based on, e.g. `"7"`.
+      schema: { type: string }
+  headers:
+    ETag:
+      description: The entry's version, quoted.
+      schema: { type: string }
+  responses:
+    Unauthorized:
+      description: Not signed in, or not allowed (what the host requires).
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: No such record.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Precondition:
+      description: The entry changed since the version in If-Match.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Invalid:
+      description: Invalid input.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ValidationError" }
+  schemas:
+    Error:
+      type: object
+      properties:
+        error: { type: string }
+      required: [error]
+    ValidationError:
+      type: object
+      properties:
+        error: { type: string }
+        errors:
+          type: object
+          additionalProperties: { type: array, items: { type: string } }
+      required: [error, errors]
+    Field:
+      type: object
+      properties:
+        name: { type: string, pattern: "^[a-z][a-z0-9_]{0,63}$" }
+        type: { type: string, enum: [text, richtext, image, link, number, boolean, date, select, list] }
+        label: { type: string }
+        required: { type: boolean }
+        default: {}
+        options: { type: array, items: { type: string }, description: "`select`: the allowed values." }
+        format: { type: string, description: "`number`: `0.00`, `#,##0`; `date`: `DD.MM.YYYY`." }
+        fields: { type: array, items: { $ref: "#/components/schemas/Field" }, description: "`list`: the item's fields (one level)." }
+      required: [name, type]
+    Template:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        fields: { type: array, items: { $ref: "#/components/schemas/Field" } }
+        version: { type: [string, integer] }
+        updated_at: { type: string, format: date-time }
+      required: [id, name, fields]
+    TemplateWithData:
+      allOf:
+        - { $ref: "#/components/schemas/Template" }
+        - type: object
+          properties:
+            data: { type: [object, "null"], description: The GrapesJS project of the design. }
+    TemplateWrite:
+      type: object
+      properties:
+        name: { type: string }
+        fields: { type: array, items: { $ref: "#/components/schemas/Field" } }
+        data: { type: [object, "null"] }
+      required: [fields]
+    Values:
+      type: object
+      description: |
+        By field name: text, rich text (HTML) and select values are strings; numbers numbers (or
+        numeric strings); booleans; dates `YYYY-MM-DD`; images `{url, alt}` (or a URL); links
+        `{url, label}` (or a URL); lists arrays of objects with the item's fields.
+      additionalProperties: true
+    Entry:
+      type: object
+      properties:
+        id: { type: string }
+        template_id: { type: string }
+        name: { type: string }
+        slug: { type: string }
+        status: { type: string, enum: [draft, published, archived] }
+        values: { $ref: "#/components/schemas/Values" }
+        version: { type: [string, integer] }
+        updated_at: { type: string, format: date-time }
+      required: [id, template_id, name]
+    EntryWrite:
+      type: object
+      properties:
+        template_id: { type: string }
+        name: { type: string }
+        slug: { type: string }
+        values: { $ref: "#/components/schemas/Values" }
+      required: [template_id, name]
