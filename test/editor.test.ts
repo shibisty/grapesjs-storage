@@ -260,3 +260,17 @@ describe('errors', () => {
     expect(new ConflictError().status).toBe(412);
   });
 });
+
+describe('the panel button', () => {
+  it('follows the panel when it is opened and closed from code', async () => {
+    const s = await createEditor();
+    editor = s.editor;
+    const { PANEL_BUTTON_ID } = await import('../src/plugin');
+    const { COMMANDS } = await import('../src/events');
+    const btns = editor.Panels.getPanel('views')!.get('buttons')!;
+    editor.runCommand(COMMANDS.open);
+    expect(btns.get(PANEL_BUTTON_ID)!.get('active')).toBe(true);
+    editor.stopCommand(COMMANDS.open);
+    expect(btns.get(PANEL_BUTTON_ID)!.get('active')).toBe(false);
+  });
+});

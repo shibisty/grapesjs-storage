@@ -186,10 +186,17 @@ export default function storagePlugin(editor: Editor, userOpts: StorageOptions =
       if (!panel) return;
       panelButtons?.forEach((b: any) => b.id !== PANEL_BUTTON_ID && b.get('active') && b.set('active', false));
       panel.show();
+      // `listen` follows the command in GrapesJS 0.21, not in 0.23: keep the
+      // button in step ourselves (the command is already active, so the
+      // button's own run is a no-op).
+      const ours = panelButtons?.get(PANEL_BUTTON_ID);
+      if (ours && !ours.get('active')) ours.set('active', true);
     },
     stop() {
       wantOpen = false;
       panel?.hide();
+      const ours = panelButtons?.get(PANEL_BUTTON_ID);
+      if (ours?.get('active')) ours.set('active', false);
     },
   });
   editor.Commands.add(COMMANDS.toggle, {
