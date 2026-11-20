@@ -170,8 +170,10 @@ export class FieldComponents {
             if (!coll) return;
             const at = coll.indexOf(this);
             const selected = editor.getSelected?.() === this;
-            coll.remove(this);
-            const added = coll.add(json, { at });
+            // keepIds: GrapesJS would drop the `#id` rules of the removed component — the new one has the same id.
+            const keepIds = [this.getId()];
+            coll.remove(this, { keepIds } as any);
+            const added = coll.add(json, { at, keepIds } as any);
             const model = Array.isArray(added) ? added[0] : added;
             if (selected && model) editor.select(model);
           });

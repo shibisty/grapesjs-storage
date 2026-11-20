@@ -663,19 +663,28 @@ describe('fields as elements (styled in GrapesJS)', () => {
     // the tag of a text field
     const trait = title.get('traits').find((t: any) => t.get('name') === 'tagName');
     expect(trait).toBeTruthy();
+    const tid = title.getId();
+    title.setStyle({ color: 'red' });
     title.set('tagName', 'h1');
     await tick(5);
     const h1 = editor.getWrapper()!.components().filter((c: any) => c.getAttributes()['data-storage-field'] === 'title')[0]!;
     expect(h1.get('tagName')).toBe('h1');
     expect(editor.getHtml()).toContain('<h1 data-storage-field="title"');
     expect(h1.getEl()!.innerHTML).toBe('Hello');
+    // its style stays with it
+    expect(h1.getId()).toBe(tid);
+    expect(editor.getCss()).toContain(`#${tid}{color:red;}`);
   });
 
-  it('older images placed as a <div> become the <img>', async () => {
+  it('older images placed as a <div> become the <img>; their styles stay', async () => {
     const { editor } = await setup({ photo: { url: 'a.png' } });
-    const [c] = editor.getWrapper()!.append('<div data-storage-field="photo" data-storage-type="image" data-storage-template="m"><img src="old.png"></div>') as any[];
+    editor.Css.addRules('#oldimg{max-width:100%;}');
+    const [c] = editor.getWrapper()!.append('<div id="oldimg" data-storage-field="photo" data-storage-type="image" data-storage-template="m"><img src="old.png"></div>') as any[];
     await tick(5);
     expect(c.get('tagName')).toBe('img');
+    expect(c.getEl().tagName).toBe('IMG');
+    expect(editor.getCss()).toContain('#oldimg{max-width:100%;}');
+    expect(editor.getHtml()).toMatch(/<img[^>]*id="oldimg"/);
     expect(c.components().length).toBe(0);
     expect(editor.getHtml()).toContain('src="a.png"');
   });
