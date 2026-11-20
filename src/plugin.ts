@@ -156,6 +156,7 @@ function storagePlugin(editor: Editor, userOpts: StorageOptions = {}): void {
     },
     { category: (name) => fmt(t('blocksCategory'), name) }
   );
+  (ed as any).__gjssFields = fields; // for tests and debugging
   /** With grapesjs-pages only the open page's template; alone all of them. */
   const updateBlocks = (): void => {
     if (disposed) return;

@@ -602,3 +602,142 @@ describe('with grapesjs-pages', () => {
     expect((await store.getEntry('p1'))!.values).toMatchObject({ title: 'Typed' });
   });
 });
+
+describe('fields as elements (styled in GrapesJS)', () => {
+  const TPL2 = {
+    id: 'm',
+    name: 'Media',
+    fields: [
+      { name: 'photo', type: 'image' as const },
+      { name: 'more', type: 'link' as const },
+      { name: 'mail', type: 'email' as const },
+      { name: 'pics', type: 'gallery' as const },
+      { name: 'title', type: 'text' as const },
+      { name: 'day', type: 'date' as const },
+    ] as SchemaField[],
+  };
+  const setup = async (values: any) => {
+    s = await createEditor({
+      plugin: { store: new MemoryContentStore({ templates: [TPL2], entries: [{ id: 'p1', templateId: 'm', name: 'P', values }] }) },
+      before: (ed) => fakePages(ed, [{ id: 'p1', name: 'P', kind: 'page', values: { 'storage.template': 'm' } }]),
+    });
+    await until(() => !!s!.api.current());
+    return s;
+  };
+
+  it('an image is an <img>, a link an <a>: selectable and styled; empty ones are hidden on the site', async () => {
+    const { editor, api } = await setup({ photo: { url: 'a.png', alt: 'A' }, more: { url: '/x', title: 'More', target: '_blank' }, mail: 'a@b.c' });
+    const img = addBlock(editor, 'm', 'photo');
+    const a = addBlock(editor, 'm', 'more');
+    const mail = addBlock(editor, 'm', 'mail');
+    await tick(5);
+    expect(img.get('tagName')).toBe('img');
+    expect(img.getEl().tagName).toBe('IMG');
+    expect(img.getEl().getAttribute('src')).toBe('a.png');
+    img.addClass('hero');
+    const html = editor.getHtml();
+    expect(html).toMatch(/<img data-storage-field="photo"[^>]*class="hero"[^>]*src="a.png" alt="A"\/?>/);
+    expect(html).toMatch(/<a data-storage-field="more"[^>]*target="_blank" rel="noopener" href="\/x">More<\/a>/);
+    expect(html).toContain('href="mailto:a@b.c">a@b.c</a>');
+    expect(a.getEl().tagName).toBe('A');
+    expect(mail.get('traits').length).toBe(0); // no tag choice: it is a link
+    await api.setData('p1', { photo: null, more: null });
+    await tick(5);
+    expect(img.getEl().getAttribute('src')).toMatch(/^data:image\/svg\+xml/);
+    expect(editor.getHtml()).toMatch(/<img data-storage-field="photo"[^>]*hidden=""/);
+    expect(JSON.stringify(editor.getProjectData())).not.toContain('a.png'); // not stored
+  });
+
+  it('a gallery repeats an <img> per picture; text fields choose their tag', async () => {
+    const { editor } = await setup({ pics: [{ url: '1.jpg' }, { url: '2.jpg', alt: 'Two' }], title: 'Hello' });
+    const gal = addBlock(editor, 'm', 'pics');
+    const title = addBlock(editor, 'm', 'title');
+    const day = addBlock(editor, 'm', 'day');
+    await tick(20);
+    const item = gal.components().at(0);
+    expect(item.get('tagName')).toBe('img');
+    expect(item.getEl().getAttribute('src')).toBe('1.jpg');
+    expect(gal.getEl().querySelector('.gjss-ghost img')!.getAttribute('src')).toBe('2.jpg');
+    expect(editor.getHtml()).toMatch(/src="1.jpg" alt=""\/?><img[^>]*src="2.jpg" alt="Two"/);
+    expect(day.get('tagName')).toBe('time');
+    // the tag of a text field
+    const trait = title.get('traits').find((t: any) => t.get('name') === 'tagName');
+    expect(trait).toBeTruthy();
+    title.set('tagName', 'h1');
+    await tick(5);
+    const h1 = editor.getWrapper()!.components().filter((c: any) => c.getAttributes()['data-storage-field'] === 'title')[0]!;
+    expect(h1.get('tagName')).toBe('h1');
+    expect(editor.getHtml()).toContain('<h1 data-storage-field="title"');
+    expect(h1.getEl()!.innerHTML).toBe('Hello');
+  });
+
+  it('older images placed as a <div> become the <img>', async () => {
+    const { editor } = await setup({ photo: { url: 'a.png' } });
+    const [c] = editor.getWrapper()!.append('<div data-storage-field="photo" data-storage-type="image" data-storage-template="m"><img src="old.png"></div>') as any[];
+    await tick(5);
+    expect(c.get('tagName')).toBe('img');
+    expect(c.components().length).toBe(0);
+    expect(editor.getHtml()).toContain('src="a.png"');
+  });
+});
+
+describe('layers: rich text and repeated rows', () => {
+  const TPL3 = {
+    id: 'r',
+    name: 'Rich',
+    fields: [
+      { name: 'body', type: 'wysiwyg' as const },
+      { name: 'items', type: 'repeater' as const, fields: [{ name: 'name', type: 'text' as const }] },
+    ] as SchemaField[],
+  };
+  const setup = async (values: any) => {
+    s = await createEditor({
+      plugin: { store: new MemoryContentStore({ templates: [TPL3], entries: [{ id: 'p1', templateId: 'r', name: 'P', values }] }) },
+      before: (ed) => fakePages(ed, [{ id: 'p1', name: 'P', kind: 'page', values: { 'storage.template': 'r' } }]),
+    });
+    await until(() => !!s!.api.current());
+    return s;
+  };
+
+  it('the HTML of a rich text field is components: selected and styled by stable ids, not kept in the project', async () => {
+    const { editor, api } = await setup({ body: '<h2>Title</h2><p>One <b>bold</b></p>' });
+    const body = addBlock(editor, 'r', 'body');
+    await tick(20);
+    const kids = body.components();
+    expect(kids.map((c: any) => c.get('tagName'))).toEqual(['h2', 'p']);
+    const id = body.getId();
+    expect(kids.at(1).getId()).toBe(`${id}-1`);
+    expect(kids.at(1).components().at(1).getId()).toBe(`${id}-1-0`);
+    expect(kids.at(0).get('draggable')).toBe(false);
+    expect(kids.at(0).get('selectable')).toBe(true);
+    kids.at(1).addStyle({ color: 'red' });
+    // the published HTML keeps the ids, so the style applies on the site
+    expect(editor.getHtml()).toContain(`<p id="${id}-1">One <b id="${id}-1-0">bold</b></p>`);
+    expect(editor.getCss()).toContain(`#${id}-1{color:red;}`);
+    expect(JSON.stringify(editor.getProjectData().pages)).not.toContain('One');
+    // new data: drawn again, same ids
+    await api.setData('p1', { body: '<h2>New</h2><p>Two</p>' });
+    await tick(20);
+    expect(body.components().at(1).getId()).toBe(`${id}-1`);
+    expect(body.components().at(1).getEl().textContent).toBe('Two');
+    await api.setData('p1', { body: null });
+    await tick(20);
+    expect(body.components().length).toBe(0);
+    expect(body.getEl().innerHTML).toContain('[body]');
+  });
+
+  it('a click on a drawn row selects the same place in the row design', async () => {
+    const { editor } = await setup({ items: [{ name: 'A' }, { name: 'B' }, { name: 'C' }] });
+    const fc: any = (editor as any).__gjssFields;
+    const rep = addBlock(editor, 'r', 'items');
+    await tick(20);
+    const ghost = rep.getEl().querySelector('.gjss-ghost')!;
+    expect(ghost.children.length).toBe(2);
+    const nameInRow3 = ghost.children[1].children[0];
+    expect(nameInRow3.textContent).toBe('C');
+    const src = fc.ghostSource(nameInRow3);
+    expect(src.getAttributes()['data-storage-field']).toBe('name');
+    expect(src.parent().parent()).toBe(rep);
+    expect(fc.ghostSource(ghost.children[0])).toBe(rep.components().at(0));
+  });
+});

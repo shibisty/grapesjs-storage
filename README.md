@@ -102,6 +102,18 @@ has it once per row of data, the canvas shows the first row editable and the oth
 they will look. The fields of groups and repeaters also have blocks of their own
 (*Group › Field*), to drop inside them. Tabs, accordions and messages have no blocks.
 
+An **image** field is the `<img>` itself and a link-like field (`link`, `url`, `email`, `file`, one
+`page_link`) the `<a>` itself, so they are selected and styled like any image or link; their
+`src` / `href` come from the data (empty: a grey placeholder in the canvas, `hidden` on the site).
+A **gallery** is a repeater of one `<img>`: style that image, it is repeated per picture. A field
+that holds text has a *Tag* trait (`div`, `p`, `h1`…`h6`, `span`, `strong`…; dates are `<time>`).
+The HTML of a `wysiwyg` field is drawn as components: its headings, paragraphs, images… are seen
+in Layers and can be selected and styled (not moved or edited — the text comes from the data). They
+get stable ids from the field's id and their place (`#ibody-1-0`), in the canvas and on the site,
+so their styles stay when the data changes; they are not kept in the project. In a repeater, a
+click on any drawn row selects the same element of the row design, so every row is styled from
+where it is seen.
+
 A field element keeps its attributes in the published HTML, so a server can fill it too:
 
 ```html
