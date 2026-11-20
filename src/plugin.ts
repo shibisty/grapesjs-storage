@@ -183,16 +183,27 @@ function storagePlugin(editor: Editor, userOpts: StorageOptions = {}): void {
     listen: true,
     attributes: { title: t('content') },
   });
+  /**
+   * grapesjs-sidebar-tools docks the views as tabs: it gives each button a
+   * context of its own and keeps the buttons idle itself. Then the views no
+   * longer exclude each other, and touching the buttons from here would
+   * start a run/stop ping-pong with it (the page hangs on every selection).
+   */
+  const docked = (b: any): boolean => String(b?.get?.('context') || '').startsWith('gjs-st-view:');
   editor.Commands.add(COMMANDS.open, {
     run() {
       wantOpen = true;
       if (!panel) return;
+      const ours = panelButtons?.get(PANEL_BUTTON_ID);
+      if (docked(ours)) {
+        panel.show();
+        return;
+      }
       panelButtons?.forEach((b: any) => b.id !== PANEL_BUTTON_ID && b.get('active') && b.set('active', false));
       panel.show();
       // `listen` follows the command in GrapesJS 0.21, not in 0.23: keep the
       // button in step ourselves (the command is already active, so the
       // button's own run is a no-op).
-      const ours = panelButtons?.get(PANEL_BUTTON_ID);
       if (ours && !ours.get('active')) ours.set('active', true);
     },
     stop() {
@@ -238,7 +249,7 @@ function storagePlugin(editor: Editor, userOpts: StorageOptions = {}): void {
     if (panelButtons) {
       const ours = panelButtons.get(PANEL_BUTTON_ID);
       const onActive = (b: any): void => {
-        if (b.id === PANEL_BUTTON_ID || !b.get('active')) return;
+        if (b.id === PANEL_BUTTON_ID || !b.get('active') || docked(b) || docked(ours)) return;
         if (ours?.get('active')) ours.set('active', false);
         if (panel?.isOpen) editor.stopCommand(COMMANDS.open);
       };
