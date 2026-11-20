@@ -91,6 +91,11 @@ export function openTemplateEditor(editor: Editor, tpl: Template, o: TemplateEdi
   const fields: SchemaField[] = clone(tpl.fields || []);
   const open = new WeakSet<SchemaField>();
   const save = () => o.save({ fields: clone(fields) });
+  /** Fields inside a translated group / repeater: translated with it, no flag of their own. */
+  const inTranslated = (f: SchemaField): boolean => {
+    const walk = (list: SchemaField[], on: boolean): boolean => list.some((x) => (x === f ? on : walk(x.fields || [], on || !!x.translatable)));
+    return walk(fields, false);
+  };
 
   const name = h('input', { class: 'gjss-input', type: 'text', name: 'template-name', 'aria-label': t('templateName') }) as HTMLInputElement;
   name.value = tpl.name;
@@ -273,6 +278,23 @@ export function openTemplateEditor(editor: Editor, tpl: Template, o: TemplateEdi
           'div',
           { class: 'gjss-te-grid' },
           f.type !== 'group' ? check(t('fieldRequired'), f.required, (v) => (f.required = v || undefined), 'required') : null,
+          inTranslated(f)
+            ? null
+            : check(
+                t('translatable'),
+                f.translatable,
+                (v) => {
+                  f.translatable = v || undefined;
+                  // a translated container carries its fields: their own flags go
+                  if (v) {
+                    const drop = (l: SchemaField[]): void => l.forEach((x) => (delete x.translatable, drop(x.fields || [])));
+                    drop(f.fields || []);
+                  }
+                  if (f.fields?.length) redraw();
+                  else head();
+                },
+                'translatable'
+              ),
           number(t('width'), f.width, (v) => (f.width = v && v > 0 && v < 100 ? v : undefined), 'width')
         )
       );
@@ -442,6 +464,7 @@ export function openTemplateEditor(editor: Editor, tpl: Template, o: TemplateEdi
             h('code', { class: 'gjss-te-name' }, f.name),
             h('span', { class: 'gjss-te-type' }, t(`type_${f.type}` as 'type_text')),
             f.required ? h('span', { class: 'gjss-req' }, '*') : null,
+            f.translatable ? h('span', { class: 'gjss-te-flag', title: t('translatable') }, '🌐') : null,
             f.conditions?.length ? h('span', { class: 'gjss-te-flag', title: t('conditionalLogic') }, '⑂') : null,
             act('up', '↑', t('moveUp'), () => move(-1), i === 0),
             act('down', '↓', t('moveDown'), () => move(1), i === list.length - 1),

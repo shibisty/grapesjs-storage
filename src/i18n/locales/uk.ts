@@ -140,6 +140,18 @@ const messages: StorageLabels = {
   pickChoose: 'Вибрати',
   pickChooseN: 'Вибрати (%s)',
   cancel: 'Скасувати',
+  translatable: 'Перекладне',
+  languages: 'Мови',
+  defaultLanguage: 'За замовчуванням',
+  dataTab: 'Контент',
+  languagesHint: 'Перекладні поля мають значення для кожної ввімкненої мови. Без перекладу показується мова за замовчуванням; нею ж публікується сторінка.',
+  enabledLanguages: 'Мови сайту',
+  allLanguages: 'Усі мови',
+  noLanguages: 'Мов немає: поля не перекладаються.',
+  makeDefault: 'Зробити основною',
+  enableLanguage: 'Увімкнути',
+  disableLanguage: 'Вимкнути',
+  searchLanguages: 'Знайти мову…',
 };
 
 export default messages;

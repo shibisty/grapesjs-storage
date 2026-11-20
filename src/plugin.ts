@@ -4,7 +4,7 @@ import { FieldComponents } from './editor/FieldComponents';
 import { COMMANDS, EVENTS } from './events';
 import { createTranslator, getLocale, registerMessages } from './i18n';
 import { designOf, isPage, openDataModal, type PageRec, type PagesBridge, type PagesLike, recordFormSections, templateIdOf } from './integration/pages';
-import { type DataValues, normalizeFields, type SchemaField } from './schema';
+import { type DataValues, localizeValues, normalizeFields, type SchemaField } from './schema';
 import { IndexedDbContentStore } from './store/IndexedDbContentStore';
 import { RestContentStore } from './store/RestContentStore';
 import type { ContentStore, Template } from './store/types';
@@ -15,6 +15,7 @@ import type { AssetSource } from './ui/DataForm';
 import { Panel } from './ui/Panel';
 import { openTemplateEditor } from './ui/TemplateEditor';
 import { injectCss, injectMediaCss } from './ui/styles';
+import { languageName, normalizeLanguages, type LanguageSettings } from './languages';
 import { mediaSources, pickMedia } from './ui/media';
 import { fmt, report, uuid } from './utils';
 
@@ -98,11 +99,58 @@ function storagePlugin(editor: Editor, userOpts: StorageOptions = {}): void {
   };
   const formSources = { assets, pages: () => pageList };
 
+  /* ----------------------------- languages ----------------------------- */
+
+  let languages: LanguageSettings | null = null;
+  /** The language the canvas and the forms show (null: the default). */
+  let shownLang: string | null = null;
+  const currentLang = (): string | null => (languages ? (shownLang && languages.enabled.includes(shownLang) ? shownLang : languages.default) : null);
+  // The open page's values as one language sees them, kept while the values and the language stay.
+  let memo: { src: unknown; lang: string; out: DataValues } | null = null;
+  const shownValues = (mode: 'canvas' | 'export'): DataValues => {
+    const v = ctx?.values || {};
+    if (!languages) return v;
+    const lang = mode === 'canvas' ? currentLang()! : languages.default;
+    if (memo && memo.src === v && memo.lang === lang) return memo.out;
+    const out = localizeValues(templateById(ctx?.templateId)?.fields || [], v, lang, languages.default);
+    memo = { src: v, lang, out };
+    return out;
+  };
+  const formLanguages = () => {
+    if (!languages) return null;
+    const ui = getLocale(editor);
+    return { enabled: languages.enabled, default: languages.default, current: currentLang(), onSwitch: (c: string) => setCurrent(c, true), name: (c: string) => languageName(c, ui) };
+  };
+  const setCurrent = (code: string, fromForm = false): void => {
+    if (!languages || !languages.enabled.includes(code) || code === currentLang()) return;
+    shownLang = code;
+    memo = null;
+    fields.refresh();
+    if (!fromForm) panel?.setLang(code);
+    emit(EVENTS.languages, { settings: languages, current: code });
+  };
+  const loadLanguages = async (): Promise<void> => {
+    languages = normalizeLanguages(await store.getLanguages?.().catch(report));
+    memo = null;
+  };
+  const saveLanguages = async (next: LanguageSettings | null): Promise<LanguageSettings | null> => {
+    const clean = normalizeLanguages(next);
+    const saved = store.saveLanguages ? await store.saveLanguages(clean) : clean;
+    languages = normalizeLanguages(saved);
+    memo = null;
+    if (disposed) return languages;
+    fields.refresh();
+    panel?.render();
+    emit(EVENTS.languages, { settings: languages, current: currentLang() });
+    emit(EVENTS.change);
+    return languages;
+  };
+
   const fields = new FieldComponents(
     editor,
     {
       templateId: () => ctx?.templateId ?? null,
-      values: () => ctx?.values || {},
+      values: (mode) => shownValues(mode),
       template: (id) => templateById(id),
       render: { page: (id) => pageList.find((p) => p.id === id) },
     },
@@ -122,6 +170,7 @@ function storagePlugin(editor: Editor, userOpts: StorageOptions = {}): void {
 
   const normalize = (x: Template): Template => ({ ...x, fields: normalizeFields(x.fields) });
   const reload = async (): Promise<Template[]> => {
+    await loadLanguages();
     templates = (await store.listTemplates()).map(normalize).sort((a, b) => a.name.localeCompare(b.name));
     if (disposed) return templates;
     updateBlocks();
@@ -277,6 +326,7 @@ function storagePlugin(editor: Editor, userOpts: StorageOptions = {}): void {
     t,
     html: opts.htmlEditor,
     form: formSources,
+    languages: formLanguages,
     templates: () => templates,
     template: (id) => templateById(id),
     values: (recordId) => getData(recordId),
@@ -383,6 +433,12 @@ function storagePlugin(editor: Editor, userOpts: StorageOptions = {}): void {
       await writeTemplates();
       await flushData();
     },
+    languages: {
+      get: () => (languages ? { default: languages.default, enabled: [...languages.enabled] } : null),
+      set: (next) => saveLanguages(next),
+      current: () => currentLang(),
+      setCurrent: (code) => setCurrent(code),
+    },
   };
   ed.ContentStorage = api;
 
@@ -454,7 +510,17 @@ function storagePlugin(editor: Editor, userOpts: StorageOptions = {}): void {
         saveData: (values) => scheduleData(values),
         close: () => editor.stopCommand(COMMANDS.open),
       },
-      { html: opts.htmlEditor, withPages: () => !!pm(), form: formSources }
+      {
+        html: opts.htmlEditor,
+        withPages: () => !!pm(),
+        form: formSources,
+        languages: {
+          get: () => languages,
+          save: (next) => void saveLanguages(next).catch(onError),
+          current: () => currentLang(),
+          setCurrent: (c) => setCurrent(c, true),
+        },
+      }
     );
     panel.setTemplates(templates);
     showPage();
@@ -532,7 +598,7 @@ function storagePlugin(editor: Editor, userOpts: StorageOptions = {}): void {
 
 export const PLUGIN_ID = 'grapesjs-storage';
 /** Version of this package (a test checks it against package.json). */
-export const VERSION = '1.1.0';
+export const VERSION = '1.2.0';
 
 /** Options for forms (plugin contract). `autosaveDelay` applies live. */
 export const META: PluginMeta = {

@@ -140,6 +140,18 @@ const messages: StorageLabels = {
   pickChoose: 'Seç',
   pickChooseN: 'Seç (%s)',
   cancel: 'İptal',
+  translatable: 'Çevrilebilir',
+  languages: 'Diller',
+  defaultLanguage: 'Varsayılan',
+  dataTab: 'İçerik',
+  languagesHint: 'Çevrilebilir alanların etkin her dil için bir değeri olur. Çeviri yoksa varsayılan dil gösterilir; sayfa bu dilde yayımlanır.',
+  enabledLanguages: 'Site dilleri',
+  allLanguages: 'Tüm diller',
+  noLanguages: 'Dil yok: alanlar çevrilmez.',
+  makeDefault: 'Varsayılan yap',
+  enableLanguage: 'Etkinleştir',
+  disableLanguage: 'Devre dışı bırak',
+  searchLanguages: 'Dil ara…',
 };
 
 export default messages;

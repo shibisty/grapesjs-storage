@@ -155,11 +155,15 @@ getData(recordId): Promise<values>
 setData(recordId, values): Promise<void>      // null deletes a key
 addData(pageId, { name?, values? }): Promise<PageRecord>   // a data record (grapesjs-site-pages)
 flush(): Promise<void>
+languages.get(): { default, enabled[] } | null
+languages.set({ default, enabled }): Promise<…>  // saved in the store
+languages.current(): string | undefined          // the language the canvas and the form show
+languages.setCurrent(code)
 ```
 
-Helpers: `normalizeFields`, `parseChoices`, `conditionsHold`, `checkData`, `defaults`,
-`storedValues`, `valueHtml`, `formatDateValue`, `fieldAt`, `dataForm`, `loadJodit`. Events:
-`storage:templates`, `storage:data`, `storage:saved`, `storage:change`. Commands: `storage:open`,
+Helpers: `normalizeLanguages`, `isLangMap`, `pickLang`, `LANGUAGES`, `normalizeFields`, `parseChoices`, `conditionsHold`, `checkData`, `defaults`,
+`storedValues`, `localizeValues`, `valueHtml`, `formatDateValue`, `fieldAt`, `dataForm`, `loadJodit`. Events:
+`storage:templates`, `storage:data`, `storage:saved`, `storage:change`, `storage:languages`. Commands: `storage:open`,
 `storage:toggle`.
 
 **From 0.x.** Templates used to be designs with fields marked in them (`data-field`,
@@ -167,6 +171,29 @@ Helpers: `normalizeFields`, `parseChoices`, `conditionsHold`, `checkData`, `defa
 pages hold the design. Existing templates keep their fields (older types are mapped: `richtext`
 → `wysiwyg`, `boolean` → `true_false`, `list` → `repeater` with its fields); the older helpers
 (`render`, `fieldsOfHtml`, `collectFields`…) are still exported for servers.
+
+## Languages
+
+The panel has two tabs: **Content** and **Languages**. In Languages you switch site languages on
+and off (a list of ~100 languages with region, `uk-ua`, `en-gb`, `pt-br`…, with a flag), order
+them and mark the default one (★). The setting lives in the store (`GET/PUT /languages`).
+
+Any field can be marked **Translatable** in the template (🌐). Its value is then a map by
+language code; the other fields keep one value for all languages:
+
+```json
+{ "title": { "uk-ua": "Кавомолка", "en-gb": "Coffee grinder" }, "price": 1200 }
+```
+
+A translatable repeater, group or flexible content keeps a whole copy per language (its own
+fields are not marked again). Language codes always have a hyphen, so a map is never mistaken
+for a value (`{ url, alt }`) or a group. A plain value saved before the field became translatable
+counts as the default language's.
+
+The data form shows a language bar; the canvas shows the chosen language, falling back to the
+default one. `getHtml()` and the published page carry the **default** language; the server puts
+another language in through the `data-storage-field` attributes (`localizeValues(fields, values,
+lang, defaultLang)` gives one language's values). `required` is checked for the default language.
 
 ## Storage
 
@@ -177,12 +204,13 @@ interface ContentStore {
   putEntry(entry, ifVersion?);        // values merge; null deletes a key; ConflictError on 412
   deleteEntry(id, ifVersion?);
   publishEntry?(id, ifVersion?);
+  getLanguages?(); saveLanguages?(settings);
 }
 ```
 
 `RestContentStore` follows [`openapi.yaml`](./openapi.yaml): `GET /templates`,
 `GET/PUT/DELETE /templates/{id}`, `GET /entries?template=`, `GET/PUT/DELETE /entries/{id}`,
-`POST /entries/{id}/publish`. An entry's id is the page's id.
+`POST /entries/{id}/publish`, `GET/PUT /languages` (404 = none yet). An entry's id is the page's id.
 
 ## Development
 

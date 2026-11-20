@@ -17,6 +17,7 @@ import { fmt } from '../utils';
 import { h } from './dom';
 import { attachHtmlEditor, type HtmlEditorOptions } from './jodit';
 import type { MediaSource, PickedMedia } from './media';
+import { flagOf, isLangMap } from '../languages';
 
 /**
  * Where image, file and gallery fields pick from: the editor's Asset
@@ -38,10 +39,31 @@ export interface DataFormOptions {
   assets?: AssetSource;
   /** Pages a `page_link` field can point to. */
   pages?(): Array<{ id: string; name: string; slug?: string }>;
+  /**
+   * The site's languages: translatable fields then hold a value per
+   * language and the form edits one language at a time (a bar on top).
+   */
+  languages?: FormLanguages | null;
+}
+
+export interface FormLanguages {
+  /** Enabled codes, the default first. */
+  enabled: string[];
+  default: string;
+  /** The language shown first (default: the default one). */
+  current?: string | null;
+  /** The bar switched the language (the plugin shows the canvas in it too). */
+  onSwitch?(code: string): void;
+  /** A language's name for the bar's titles. */
+  name?(code: string): string;
 }
 
 export interface DataForm {
   el: HTMLElement;
+  /** The language being edited (`''` without languages). */
+  lang(): string;
+  /** Shows another language (the bar does the same). */
+  setLang(code: string): void;
   /** The values as stored; empty top-level fields are `null` (they delete the key). */
   read(): DataValues;
   problems(): DataProblem[];
@@ -68,6 +90,41 @@ export function dataForm(o: DataFormOptions): DataForm {
   const offs: Array<() => void> = [];
   const checkers: Array<() => void> = [];
   const rowsByPath = new Map<string, HTMLElement>();
+
+  const L = o.languages && o.languages.enabled.length ? o.languages : null;
+  const defLang = L?.default || '';
+  let lang = (L && L.current && L.enabled.includes(L.current) ? L.current : defLang) || '';
+  const hasTranslatable = (fields: SchemaField[]): boolean => fields.some((f) => f.translatable || hasTranslatable(f.fields || []));
+
+  /**
+   * A translatable field is edited through a stand-in object: its key reads
+   * and writes the current language of the field's map (a plain older value
+   * becomes the default language's), every other key is the real object's.
+   */
+  const made = new WeakMap<object, Map<string, Record<string, unknown>>>();
+  const mapOf = (obj: DataValues, name: string): Record<string, unknown> => {
+    const cur = obj[name];
+    if (isLangMap(cur)) return cur;
+    const kept = made.get(obj)?.get(name);
+    if (kept && cur === kept) return kept;
+    const m: Record<string, unknown> = isEmptyValue(cur) || !defLang ? {} : { [defLang]: cur };
+    obj[name] = m;
+    if (!made.has(obj)) made.set(obj, new Map());
+    made.get(obj)!.set(name, m);
+    return m;
+  };
+  const viewOf = (f: SchemaField, obj: DataValues): DataValues => {
+    if (!L || !f.translatable) return obj;
+    const px = Object.create(obj) as DataValues;
+    Object.defineProperty(px, f.name, {
+      get: () => mapOf(obj, f.name)[lang],
+      set: (v) => {
+        mapOf(obj, f.name)[lang] = v;
+      },
+      enumerable: true,
+    });
+    return px;
+  };
 
   const read = (): DataValues => storedValues(o.fields, state);
   const changed = (): void => {
@@ -555,11 +612,20 @@ export function dataForm(o: DataFormOptions): DataForm {
         f.type === 'group' || f.type === 'repeater' || f.type === 'checkbox' || f.type === 'radio' ? 'span' : 'label',
         { class: 'gjss-label', for: f.type === 'group' || f.type === 'repeater' ? null : id },
         fieldTitle(f),
-        f.required ? h('span', { class: 'gjss-req', 'aria-hidden': 'true' }, ' *') : null
+        f.required ? h('span', { class: 'gjss-req', 'aria-hidden': 'true' }, ' *') : null,
+        L && f.translatable ? h('span', { class: 'gjss-i18n', title: `${t('translatable')}: ${lang}` }, `🌐 ${lang.split('-')[0].toUpperCase()}`) : null
       ),
       f.instructions ? h('small', { class: 'gjss-instructions' }, f.instructions) : null,
-      control(f, obj, id, p, lab)
+      control(f, viewOf(f, obj), id, p, lab)
     );
+    // Another language than the default: an empty line shows the default's text as a hint.
+    if (L && f.translatable && lang !== defLang) {
+      const base = isLangMap(obj[f.name]) ? (obj[f.name] as Record<string, unknown>)[defLang] : undefined;
+      if (typeof base === 'string' && base.trim())
+        row.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input.gjss-input:not([type=range]):not([type=color]), textarea.gjss-input').forEach((el) => {
+          if (!el.value) el.placeholder = base.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120);
+        });
+    }
     rowsByPath.set(p.join('.'), row);
     if (f.conditions?.length) {
       const check = () => (row.hidden = !conditionsHold(f, obj));
@@ -634,10 +700,52 @@ export function dataForm(o: DataFormOptions): DataForm {
     return root;
   };
 
-  const el = h('div', { class: 'gjss-data-form' }, fieldList(o.fields, state, [], []), h('small', { class: 'gjss-hint' }, t('dataHint')));
-  const problems = (): DataProblem[] => checkData(o.fields, state);
+  const el = h('div', { class: 'gjss-data-form' });
+  const langBar = (): HTMLElement | null => {
+    if (!L || L.enabled.length < 2 || !hasTranslatable(o.fields)) return null;
+    return h(
+      'div',
+      { class: 'gjss-langs', role: 'tablist', 'aria-label': t('languages') },
+      ...L.enabled.map((code) =>
+        h(
+          'button',
+          {
+            type: 'button',
+            role: 'tab',
+            class: 'gjss-lang' + (code === lang ? ' is-active' : ''),
+            'aria-selected': code === lang ? 'true' : 'false',
+            'data-lang': code,
+            title: `${L.name?.(code) || code}${code === defLang ? ` · ${t('defaultLanguage')}` : ''}`,
+            onclick: () => {
+              if (code === lang) return;
+              lang = code;
+              draw();
+              L.onSwitch?.(code);
+            },
+          },
+          h('span', { class: 'gjss-flag', 'aria-hidden': 'true' }, flagOf(code)),
+          code.split('-')[0].toUpperCase(),
+          code === defLang ? h('span', { class: 'gjss-lang-def', 'aria-hidden': 'true' }, '•') : null
+        )
+      )
+    );
+  };
+  const draw = (): void => {
+    offs.splice(0).forEach((f) => f());
+    checkers.length = 0;
+    rowsByPath.clear();
+    el.replaceChildren(...[langBar(), fieldList(o.fields, state, [], []), h('small', { class: 'gjss-hint' }, t('dataHint'))].filter((x): x is HTMLElement => !!x));
+  };
+  draw();
+  const problems = (): DataProblem[] => checkData(o.fields, state, [], [], defLang);
   return {
     el,
+    lang: () => lang,
+    setLang: (code: string) => {
+      if (!L || !L.enabled.includes(code) || code === lang) return;
+      lang = code;
+      draw();
+    },
     read,
     problems,
     problemText: () => {

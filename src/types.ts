@@ -1,3 +1,4 @@
+import type { LanguageSettings } from './languages';
 import type { DataValues, SchemaField } from './schema';
 import type { StorageLabels } from './i18n/types';
 import type { PageRec } from './integration/pages';
@@ -60,4 +61,17 @@ export interface StorageApi {
   addData(pageId: string, init?: { name?: string; values?: DataValues }): Promise<PageRec>;
   /** Writes pending changes now. */
   flush(): Promise<void>;
+  /**
+   * The site's languages. Translatable fields hold a value per language;
+   * the canvas and the data form show one (`current`), the published HTML
+   * is in the default one.
+   */
+  languages: {
+    get(): LanguageSettings | null;
+    /** Writes them (`null`: none — fields are not translated). */
+    set(settings: LanguageSettings | null): Promise<LanguageSettings | null>;
+    /** The language the canvas and the form show (null: no languages). */
+    current(): string | null;
+    setCurrent(code: string): void;
+  };
 }

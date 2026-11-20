@@ -53,8 +53,11 @@ const esc = (s: string): string => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', 
 export interface FieldContext {
   /** The template of the open record (null: none, every field shows its placeholder). */
   templateId(): string | null;
-  /** The open record's data. */
-  values(): DataValues;
+  /**
+   * The open record's data as shown: in the canvas in its language, in the
+   * published HTML (`export`) in the site's default language.
+   */
+  values(mode: 'canvas' | 'export'): DataValues;
   /** A template by id (for the field's type and label). */
   template(id: string): Template | undefined;
   /** Pages for `page_link` values. */
@@ -74,6 +77,8 @@ export class FieldComponents {
   private readonly offs: Array<() => void> = [];
   /** While a repeater is exported: the row each repeater is at. */
   private readonly rowAt = new Map<any, number>();
+  /** While the canvas' ghost rows are drawn (their HTML is the canvas language's). */
+  private drawing = false;
 
   constructor(
     private readonly editor: Editor,
@@ -94,7 +99,7 @@ export class FieldComponents {
       model: {
         defaults: { tagName: 'div', droppable: false, editable: false, components: [] },
         getInnerHTML(this: any) {
-          return self.inner(this, false);
+          return self.inner(this, self.drawing, false);
         },
       },
       view: {
@@ -114,7 +119,7 @@ export class FieldComponents {
         defaults: { tagName: 'div', droppable: true },
         // One copy of the row design per row of data.
         getInnerHTML(this: any, opts: any) {
-          const rows = self.rows(this);
+          const rows = self.rows(this, self.drawing);
           const kids = this.components();
           let html = '';
           for (let i = 0; i < rows.length; i++) {
@@ -165,11 +170,11 @@ export class FieldComponents {
   }
 
   /** The data a component's name is looked up in (the page's, a group's object, a repeater's row). */
-  private scope(model: any): { values: DataValues; path: string[]; tplId: string } | null {
+  private scope(model: any, canvas: boolean): { values: DataValues; path: string[]; tplId: string } | null {
     const chain = this.containers(model);
     const tplId = this.templateOf(model, chain);
     if (tplId && tplId !== this.ctx.templateId()) return { values: {}, path: chain.map(this.nameOf), tplId };
-    let v: any = this.ctx.values();
+    let v: any = this.ctx.values(canvas ? 'canvas' : 'export');
     for (const c of chain) {
       v = v?.[this.nameOf(c)];
       if (c.get('type') === REPEATER_TYPE) v = Array.isArray(v) ? v[this.rowAt.get(c) ?? 0] : undefined;
@@ -177,21 +182,21 @@ export class FieldComponents {
     return { values: v && typeof v === 'object' ? v : {}, path: chain.map(this.nameOf), tplId };
   }
 
-  private rows(model: any): DataValues[] {
-    const s = this.scope(model);
+  private rows(model: any, canvas: boolean): DataValues[] {
+    const s = this.scope(model, canvas);
     const v = s?.values[this.nameOf(model)];
     return Array.isArray(v) ? v : [];
   }
 
   /** What a field element holds: the value, or in the canvas the placeholder. */
-  private inner(model: any, canvas: boolean): string {
+  private inner(model: any, canvas: boolean, placeholder = canvas): string {
     const attrs = model.getAttributes?.() || {};
     const name = String(attrs[FIELD_ATTR.name] || '');
-    const s = this.scope(model);
+    const s = this.scope(model, canvas);
     const tpl = s?.tplId ? this.ctx.template(s.tplId) : undefined;
     const field = (tpl && fieldAt(tpl.fields, [...(s?.path || []), name])) || { name, type: (attrs[FIELD_ATTR.type] as SchemaField['type']) || 'text' };
     const html = valueHtml(field, s?.values[name], this.ctx.render);
-    if (html || !canvas) return html;
+    if (html || !placeholder) return html;
     return `<span class="${PH_CLASS}" title="${esc(fieldTitle(field))}">[${esc(name)}]</span>`;
   }
 
@@ -209,17 +214,23 @@ export class FieldComponents {
     const el = model.getEl?.() as HTMLElement | undefined;
     if (!el) return;
     el.querySelectorAll(`:scope > .${GHOST_CLASS}`).forEach((g) => g.remove());
-    const rows = this.rows(model);
+    const rows = this.rows(model, true);
     if (rows.length < 2) return;
     let html = '';
     const kids = model.components();
-    for (let i = 1; i < rows.length; i++) {
-      this.rowAt.set(model, i);
-      try {
-        html += kids.map((c: any) => c.toHTML()).join('');
-      } finally {
-        this.rowAt.delete(model);
+    const was = this.drawing;
+    this.drawing = true;
+    try {
+      for (let i = 1; i < rows.length; i++) {
+        this.rowAt.set(model, i);
+        try {
+          html += kids.map((c: any) => c.toHTML()).join('');
+        } finally {
+          this.rowAt.delete(model);
+        }
       }
+    } finally {
+      this.drawing = was;
     }
     const ghost = el.ownerDocument.createElement('div');
     ghost.className = GHOST_CLASS;

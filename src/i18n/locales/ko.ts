@@ -140,6 +140,18 @@ const messages: StorageLabels = {
   pickChoose: '선택',
   pickChooseN: '선택 (%s)',
   cancel: '취소',
+  translatable: '번역 가능',
+  languages: '언어',
+  defaultLanguage: '기본',
+  dataTab: '콘텐츠',
+  languagesHint: '번역 가능한 필드는 활성화된 언어마다 값을 가집니다. 번역이 없으면 기본 언어가 표시되며, 페이지는 기본 언어로 게시됩니다.',
+  enabledLanguages: '사이트 언어',
+  allLanguages: '모든 언어',
+  noLanguages: '언어 없음: 필드가 번역되지 않습니다.',
+  makeDefault: '기본으로 설정',
+  enableLanguage: '사용',
+  disableLanguage: '사용 안 함',
+  searchLanguages: '언어 찾기…',
 };
 
 export default messages;

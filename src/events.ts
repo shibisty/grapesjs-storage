@@ -8,6 +8,8 @@ export const EVENTS = {
   saved: 'storage:saved',
   /** Templates or data changed (lists to re-read). */
   change: 'storage:change',
+  /** The site's languages or the shown language changed. Payload: `{ settings, current }`. */
+  languages: 'storage:languages',
 } as const;
 
 export const COMMANDS = {

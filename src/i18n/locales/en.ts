@@ -140,6 +140,18 @@ const messages: StorageLabels = {
   pickChoose: 'Choose',
   pickChooseN: 'Choose (%s)',
   cancel: 'Cancel',
+  translatable: 'Translatable',
+  languages: 'Languages',
+  defaultLanguage: 'Default',
+  dataTab: 'Content',
+  languagesHint: 'Enabled languages give translatable fields a value per language. Data without a translation shows the default language; the published page is in it.',
+  enabledLanguages: 'Site languages',
+  allLanguages: 'All languages',
+  noLanguages: 'No languages: fields are not translated.',
+  makeDefault: 'Make default',
+  enableLanguage: 'Enable',
+  disableLanguage: 'Disable',
+  searchLanguages: 'Find a language…',
 };
 
 export default messages;

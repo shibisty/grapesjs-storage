@@ -1,3 +1,4 @@
+import { normalizeLanguages, type LanguageSettings } from '../languages';
 import type { Values } from '../fields';
 import { ConflictError, type ContentStore, type Entry, type Template, type TemplateWrite } from './types';
 
@@ -21,6 +22,7 @@ export function mergeValues(base: Values = {}, next: Values = {}): Values {
 export class MemoryContentStore implements ContentStore {
   protected templates = new Map<string, Template>();
   protected entries = new Map<string, Entry>();
+  protected languages: LanguageSettings | null = null;
 
   constructor(init: { templates?: Template[]; entries?: Entry[] } = {}) {
     init.templates?.forEach((t) => this.templates.set(t.id, clone(t)));
@@ -99,5 +101,15 @@ export class MemoryContentStore implements ContentStore {
     cur.updatedAt = now();
     await this.changed();
     return clone(cur);
+  }
+
+  async getLanguages(): Promise<LanguageSettings | null> {
+    return clone(this.languages);
+  }
+
+  async saveLanguages(settings: LanguageSettings | null): Promise<LanguageSettings | null> {
+    this.languages = normalizeLanguages(settings);
+    await this.changed();
+    return clone(this.languages);
   }
 }

@@ -62,6 +62,8 @@ export interface PagesBridge {
   html?: HtmlEditorOptions;
   /** Assets and pages the data form picks from. */
   form?: Pick<DataFormOptions, 'assets' | 'pages'>;
+  /** The site's languages for the data form (translatable fields). */
+  languages?(): DataFormOptions['languages'];
 }
 
 /**
@@ -109,7 +111,7 @@ export function recordFormSections(editor: Editor, pm: PagesLike, b: PagesBridge
       slot.replaceChildren(h('p', { class: 'gjss-hint' }, t('noTemplateData')));
       return;
     }
-    form = dataForm({ t, fields: tpl.fields, values: await b.values(rec!.id), html: b.html, language: getLocale(editor), ...(b.form || {}) });
+    form = dataForm({ t, fields: tpl.fields, values: await b.values(rec!.id), html: b.html, language: getLocale(editor), languages: b.languages?.(), ...(b.form || {}) });
     slot.replaceChildren(form.el);
   };
   void (async () => {
@@ -143,7 +145,7 @@ export function recordFormSections(editor: Editor, pm: PagesLike, b: PagesBridge
 export function openDataModal(editor: Editor, b: PagesBridge, rec: PageRec, tpl: Template): Promise<void> {
   const t = b.t;
   return b.values(rec.id).then((values) => {
-    const form = dataForm({ t, fields: tpl.fields, values, html: b.html, language: getLocale(editor), ...(b.form || {}) });
+    const form = dataForm({ t, fields: tpl.fields, values, html: b.html, language: getLocale(editor), languages: b.languages?.(), ...(b.form || {}) });
     const msg = h('div', { class: 'gjss-err', 'aria-live': 'polite' });
     const close = () => {
       form.destroy();

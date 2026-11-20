@@ -140,6 +140,18 @@ const messages: StorageLabels = {
   pickChoose: 'اختيار',
   pickChooseN: 'اختيار (%s)',
   cancel: 'إلغاء',
+  translatable: 'قابل للترجمة',
+  languages: 'اللغات',
+  defaultLanguage: 'الافتراضية',
+  dataTab: 'المحتوى',
+  languagesHint: 'للحقول القابلة للترجمة قيمة لكل لغة مفعّلة. دون ترجمة تظهر اللغة الافتراضية؛ وبها تُنشر الصفحة.',
+  enabledLanguages: 'لغات الموقع',
+  allLanguages: 'كل اللغات',
+  noLanguages: 'لا لغات: الحقول لا تُترجم.',
+  makeDefault: 'جعلها افتراضية',
+  enableLanguage: 'تفعيل',
+  disableLanguage: 'تعطيل',
+  searchLanguages: 'ابحث عن لغة…',
 };
 
 export default messages;

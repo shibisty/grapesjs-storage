@@ -140,6 +140,18 @@ const messages: StorageLabels = {
   pickChoose: 'בחירה',
   pickChooseN: 'בחירה (%s)',
   cancel: 'ביטול',
+  translatable: 'ניתן לתרגום',
+  languages: 'שפות',
+  defaultLanguage: 'ברירת מחדל',
+  dataTab: 'תוכן',
+  languagesHint: 'לשדות הניתנים לתרגום יש ערך לכל שפה פעילה. בלי תרגום מוצגת שפת ברירת המחדל; בה מתפרסם הדף.',
+  enabledLanguages: 'שפות האתר',
+  allLanguages: 'כל השפות',
+  noLanguages: 'אין שפות: השדות אינם מתורגמים.',
+  makeDefault: 'הגדרה כברירת מחדל',
+  enableLanguage: 'הפעלה',
+  disableLanguage: 'השבתה',
+  searchLanguages: 'חיפוש שפה…',
 };
 
 export default messages;

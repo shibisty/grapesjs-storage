@@ -1,3 +1,4 @@
+import { normalizeLanguages, type LanguageSettings } from '../languages';
 import type { Values } from '../fields';
 import type { SchemaField } from '../schema';
 import { ConflictError, type ContentStore, type Entry, StoreError, type Template, type TemplateWrite } from './types';
@@ -153,5 +154,21 @@ export class RestContentStore implements ContentStore {
 
   async publishEntry(id: string, ifVersion?: string | number | null): Promise<Entry> {
     return entry(await this.request<WireEntry>('POST', `/entries/${encodeURIComponent(id)}/publish`, { version: ifVersion }));
+  }
+
+  /** `GET /languages`; a server without it (404) has none. */
+  async getLanguages(): Promise<LanguageSettings | null> {
+    try {
+      return normalizeLanguages(await this.request<unknown>('GET', '/languages'));
+    } catch (e) {
+      if (e instanceof StoreError && e.status === 404) return null;
+      throw e;
+    }
+  }
+
+  /** `PUT /languages` `{ default, enabled }`. */
+  async saveLanguages(settings: LanguageSettings | null): Promise<LanguageSettings | null> {
+    const body = normalizeLanguages(settings) || { default: '', enabled: [] };
+    return normalizeLanguages(await this.request<unknown>('PUT', '/languages', { body }));
   }
 }

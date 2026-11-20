@@ -1,3 +1,4 @@
+import type { LanguageSettings } from '../languages';
 import type { ProjectData } from 'grapesjs';
 import type { Values } from '../fields';
 import type { SchemaField } from '../schema';
@@ -87,4 +88,9 @@ export interface ContentStore {
   deleteEntry(id: string, ifVersion?: string | number | null): Promise<void>;
   /** Makes an entry live (backends that publish). */
   publishEntry?(id: string, ifVersion?: string | number | null): Promise<Entry>;
+
+  /** The site's languages (`null`: none set — fields are not translated). */
+  getLanguages?(): Promise<LanguageSettings | null>;
+  /** Writes them (`null` clears). */
+  saveLanguages?(settings: LanguageSettings | null): Promise<LanguageSettings | null>;
 }

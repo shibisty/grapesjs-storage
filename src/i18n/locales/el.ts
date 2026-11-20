@@ -140,6 +140,18 @@ const messages: StorageLabels = {
   pickChoose: 'Επιλογή',
   pickChooseN: 'Επιλογή (%s)',
   cancel: 'Ακύρωση',
+  translatable: 'Μεταφράσιμο',
+  languages: 'Γλώσσες',
+  defaultLanguage: 'Προεπιλογή',
+  dataTab: 'Περιεχόμενο',
+  languagesHint: 'Τα μεταφράσιμα πεδία έχουν τιμή για κάθε ενεργή γλώσσα. Χωρίς μετάφραση εμφανίζεται η προεπιλεγμένη γλώσσα· σε αυτή δημοσιεύεται η σελίδα.',
+  enabledLanguages: 'Γλώσσες ιστότοπου',
+  allLanguages: 'Όλες οι γλώσσες',
+  noLanguages: 'Καμία γλώσσα: τα πεδία δεν μεταφράζονται.',
+  makeDefault: 'Ορισμός ως προεπιλογή',
+  enableLanguage: 'Ενεργοποίηση',
+  disableLanguage: 'Απενεργοποίηση',
+  searchLanguages: 'Εύρεση γλώσσας…',
 };
 
 export default messages;

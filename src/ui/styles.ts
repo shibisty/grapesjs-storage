@@ -154,6 +154,24 @@ export const CSS = `
 .gjss-te-or{font-size:11px;text-transform:uppercase;opacity:.6;margin:4px 0}
 .gjss-te-sub{margin-top:8px;padding:6px 0 0 12px;border-inline-start:2px solid rgba(255,255,255,.15)}
 .gjss-te-sub>.gjss-section{padding:0 0 4px}
+.gjss-ptabs{display:flex;gap:2px;padding:0 6px;border-bottom:1px solid rgba(0,0,0,.25)}
+.gjss-ptab{background:none;border:0;border-bottom:2px solid transparent;color:inherit;opacity:.7;cursor:pointer;padding:7px 10px;font:inherit;margin-bottom:-1px}
+.gjss-ptab:hover{opacity:1}
+.gjss-ptab.is-active{opacity:1;border-bottom-color:var(--gjs-quaternary-color,#d278c9)}
+.gjss-flag{font-size:15px;line-height:1;font-family:"Twemoji Mozilla","Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif}
+.gjss-langs{display:flex;flex-wrap:wrap;gap:4px;margin:0 0 8px;padding:6px 10px;border-bottom:1px solid rgba(255,255,255,.12)}
+.gjss-lang{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:12px;color:inherit;cursor:pointer;padding:2px 9px 2px 6px;font:inherit;font-size:12px}
+.gjss-lang.is-active{background:var(--gjs-quaternary-color,#d278c9);border-color:transparent;color:#fff}
+.gjss-lang-def{opacity:.8}
+.gjss-i18n{display:inline-block;margin-inline-start:6px;font-size:10px;padding:0 5px;border-radius:8px;background:rgba(255,255,255,.12);vertical-align:1px}
+.gjss-lrow{display:flex;align-items:center;gap:4px;padding:6px 10px;border-bottom:1px solid rgba(255,255,255,.05)}
+.gjss-lrow .gjss-switch{margin:0}
+.gjss-lrow .gjss-main{flex:1 1 auto;min-width:0}
+.gjss-lrow .gjss-name,.gjss-lrow .gjss-sub{white-space:normal;overflow-wrap:break-word}
+.gjss-lrow .gjss-act{padding:2px 3px}
+.gjss-lrow .gjss-act[disabled]{opacity:.2}
+.gjss-lang-badge{font-size:10px;opacity:.75;white-space:nowrap}
+.gjss-langlist{margin-bottom:6px}
 `;
 
 /** The Asset Manager overlay comes with the plugin's CSS. */

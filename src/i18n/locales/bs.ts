@@ -140,6 +140,18 @@ const messages: StorageLabels = {
   pickChoose: 'Odaberi',
   pickChooseN: 'Odaberi (%s)',
   cancel: 'Otkaži',
+  translatable: 'Prevodivo',
+  languages: 'Jezici',
+  defaultLanguage: 'Zadano',
+  dataTab: 'Sadržaj',
+  languagesHint: 'Prevodiva polja imaju vrijednost za svaki uključeni jezik. Bez prijevoda prikazuje se zadani jezik; na njemu se objavljuje stranica.',
+  enabledLanguages: 'Jezici stranice',
+  allLanguages: 'Svi jezici',
+  noLanguages: 'Nema jezika: polja se ne prevode.',
+  makeDefault: 'Postavi kao zadani',
+  enableLanguage: 'Uključi',
+  disableLanguage: 'Isključi',
+  searchLanguages: 'Pronađi jezik…',
 };
 
 export default messages;

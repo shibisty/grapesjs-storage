@@ -1,6 +1,6 @@
 {
   "name": "grapesjs-storage",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "GrapesJS custom fields: templates are groups of fields (string, number, date, text, HTML) made in a form; their fields are blocks, a page's data fills them. With grapesjs-site-pages: a template per page, a data form, data records in the page tree. IndexedDB or a REST server (openapi.yaml).",
   "type": "module",
   "main": "./dist/grapesjs-storage.umd.cjs",

@@ -140,6 +140,18 @@ const messages: StorageLabels = {
   pickChoose: '选择',
   pickChooseN: '选择 (%s)',
   cancel: '取消',
+  translatable: '可翻译',
+  languages: '语言',
+  defaultLanguage: '默认',
+  dataTab: '内容',
+  languagesHint: '可翻译字段为每种已启用语言保存一个值。没有翻译时显示默认语言；页面以默认语言发布。',
+  enabledLanguages: '网站语言',
+  allLanguages: '全部语言',
+  noLanguages: '没有语言：字段不翻译。',
+  makeDefault: '设为默认',
+  enableLanguage: '启用',
+  disableLanguage: '停用',
+  searchLanguages: '查找语言…',
 };
 
 export default messages;

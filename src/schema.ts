@@ -1,5 +1,6 @@
 import { fieldName, NAME_RE } from './fields';
 import { sanitizeHtml } from './render';
+import { isLangMap, pickLang } from './languages';
 
 /**
  * Templates are groups of fields made in a form, like the field groups of
@@ -126,6 +127,12 @@ export interface SchemaField {
   open?: boolean;
   /** Shown when any group holds (each group: all its rules hold). */
   conditions?: Condition[][];
+  /**
+   * A value per language (`{ 'uk-ua': …, 'en-gb': … }`) when the site has
+   * languages. A group or repeater translates as a whole (its own rows per
+   * language); fields inside a translated one are not flagged.
+   */
+  translatable?: boolean;
 }
 
 export type DataValues = Record<string, unknown>;
@@ -232,7 +239,7 @@ function normalizeConditions(raw: unknown): Condition[][] | undefined {
  * unique names (made from the label when missing), the settings each type
  * has, sub fields of groups and repeaters (recursively).
  */
-export function normalizeFields(raw: unknown): SchemaField[] {
+export function normalizeFields(raw: unknown, inTranslated = false): SchemaField[] {
   const out: SchemaField[] = [];
   const taken = new Set<string>();
   (Array.isArray(raw) ? raw : []).forEach((f: any) => {
@@ -293,8 +300,9 @@ export function normalizeFields(raw: unknown): SchemaField[] {
       const fm = str(f.format);
       if (fm) field.format = fm;
     }
+    if (f.translatable === true && !PRESENTATION.has(type) && !inTranslated) field.translatable = true;
     if (CONTAINERS.has(type)) {
-      field.fields = normalizeFields(f.fields ?? f.sub_fields);
+      field.fields = normalizeFields(f.fields ?? f.sub_fields, inTranslated || !!field.translatable);
       if (f.layout === 'table' || f.layout === 'row') field.layout = f.layout;
     }
     if (type === 'repeater') {
@@ -340,7 +348,9 @@ export const isEmptyValue = (v: unknown): boolean => {
 };
 
 /** The values compared by conditional logic: choices as their values, yes/no as `1` / `0`. */
-const asStrings = (v: unknown): string[] => {
+const asStrings = (v0: unknown): string[] => {
+  // A translated sibling: compared by the first language that has a value.
+  const v = isLangMap(v0) ? pickLang(v0, '') : v0;
   if (v === true) return ['1'];
   if (v === false) return ['0'];
   if (Array.isArray(v)) return v.map((x) => String(x));
@@ -386,16 +396,30 @@ const URL_RE = /^(https?:\/\/|\/|#|mailto:|tel:)/i;
  * dates, e-mails and addresses that are not ones, numbers out of bounds,
  * too few or too many rows. Hidden fields (conditional logic) are skipped.
  */
-export function checkData(fields: SchemaField[], values: DataValues = {}, labels: string[] = [], path: string[] = []): DataProblem[] {
+export function checkData(fields: SchemaField[], values: DataValues = {}, labels: string[] = [], path: string[] = [], defaultLang = ''): DataProblem[] {
   const out: DataProblem[] = [];
   valueFields(fields).forEach((f) => {
     if (!conditionsHold(f, values)) return;
     const v = values[f.name];
+    // A translated value: each language on its own; "required" asks for the default language
+    // (the others fall back to it). Without a known default, any language will do.
+    if (f.translatable && isLangMap(v)) {
+      const codes = Object.keys(v);
+      const req = !!f.required && (defaultLang ? true : !codes.some((c) => !isEmptyValue(v[c])));
+      const langs = defaultLang && !codes.includes(defaultLang) ? [defaultLang, ...codes] : codes;
+      langs.forEach((code) => {
+        const one: SchemaField = { ...f, translatable: false, conditions: undefined, required: req && (!defaultLang || code === defaultLang) };
+        checkData([one], { [f.name]: v[code] }, labels, path, defaultLang).forEach((pr) =>
+          out.push(code === defaultLang ? pr : { ...pr, field: `${pr.field} (${code})` })
+        );
+      });
+      return;
+    }
     const lab = [...labels, fieldTitle(f)];
     const p = [...path, f.name];
     const add = (code: DataProblem['code']) => out.push({ field: lab.join(' › '), path: p.join('.'), code });
     if (f.type === 'group') {
-      out.push(...checkData(f.fields || [], (v && typeof v === 'object' && !Array.isArray(v) ? v : {}) as DataValues, lab, p));
+      out.push(...checkData(f.fields || [], (v && typeof v === 'object' && !Array.isArray(v) ? v : {}) as DataValues, lab, p, defaultLang));
       return;
     }
     if (f.type === 'repeater') {
@@ -403,7 +427,7 @@ export function checkData(fields: SchemaField[], values: DataValues = {}, labels
       if (f.required && !rows.length) add('required');
       if (f.min && rows.length < f.min && (rows.length || f.required)) add('rowsMin');
       if (f.max && rows.length > f.max) add('rowsMax');
-      rows.forEach((row, i) => out.push(...checkData(f.fields || [], row || {}, [...lab.slice(0, -1), `${fieldTitle(f)} #${i + 1}`], [...p, String(i)])));
+      rows.forEach((row, i) => out.push(...checkData(f.fields || [], row || {}, [...lab.slice(0, -1), `${fieldTitle(f)} #${i + 1}`], [...p, String(i)], defaultLang)));
       return;
     }
     if (isEmptyValue(v) || (f.type === 'true_false' && v !== true && f.required)) {
@@ -467,8 +491,17 @@ export function storedValues(fields: SchemaField[], raw: DataValues = {}, top = 
   return out;
 }
 
-/** One value as stored (`null`: nothing). */
+/** One value as stored (`null`: nothing). A translated one: each language as stored, empty ones left out. */
 export function storedValue(f: SchemaField, raw: unknown): unknown {
+  if (f.translatable && isLangMap(raw)) {
+    const one: SchemaField = { ...f, translatable: false };
+    const out: Record<string, unknown> = {};
+    Object.entries(raw).forEach(([code, v]) => {
+      const sv = storedValue(one, v);
+      if (sv !== null && sv !== undefined) out[code] = sv;
+    });
+    return Object.keys(out).length ? out : null;
+  }
   switch (f.type) {
     case 'group': {
       const o = storedValues(f.fields || [], (raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {}) as DataValues, false);
@@ -524,6 +557,24 @@ export function storedValue(f: SchemaField, raw: unknown): unknown {
     default:
       return isEmptyValue(raw) ? null : String(raw);
   }
+}
+
+/**
+ * The values as one language sees them: every translated value replaced by
+ * its text in `lang` (else in `fallback`, else any), in groups and repeater
+ * rows too. What the canvas and the published HTML are filled with.
+ */
+export function localizeValues(fields: SchemaField[], values: DataValues = {}, lang: string, fallback = lang): DataValues {
+  const out: DataValues = { ...values };
+  valueFields(fields).forEach((f) => {
+    let v = values[f.name];
+    if (f.translatable || isLangMap(v)) v = pickLang(v, lang, fallback);
+    if (f.type === 'group' && v && typeof v === 'object' && !Array.isArray(v)) v = localizeValues(f.fields || [], v as DataValues, lang, fallback);
+    else if (f.type === 'repeater' && Array.isArray(v)) v = v.map((row) => localizeValues(f.fields || [], (row || {}) as DataValues, lang, fallback));
+    if (v === undefined) delete out[f.name];
+    else out[f.name] = v;
+  });
+  return out;
 }
 
 const esc = (s: string): string => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);

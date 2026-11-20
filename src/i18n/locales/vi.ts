@@ -140,6 +140,18 @@ const messages: StorageLabels = {
   pickChoose: 'Chọn',
   pickChooseN: 'Chọn (%s)',
   cancel: 'Hủy',
+  translatable: 'Có thể dịch',
+  languages: 'Ngôn ngữ',
+  defaultLanguage: 'Mặc định',
+  dataTab: 'Nội dung',
+  languagesHint: 'Trường có thể dịch có một giá trị cho mỗi ngôn ngữ đã bật. Khi chưa dịch sẽ hiện ngôn ngữ mặc định; trang được xuất bản bằng ngôn ngữ đó.',
+  enabledLanguages: 'Ngôn ngữ của trang',
+  allLanguages: 'Tất cả ngôn ngữ',
+  noLanguages: 'Không có ngôn ngữ: trường không được dịch.',
+  makeDefault: 'Đặt làm mặc định',
+  enableLanguage: 'Bật',
+  disableLanguage: 'Tắt',
+  searchLanguages: 'Tìm ngôn ngữ…',
 };
 
 export default messages;

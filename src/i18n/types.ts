@@ -151,4 +151,17 @@ export interface StorageLabels {
   /** %s — count */
   pickChooseN: string;
   cancel: string;
+  /** Languages of the data */
+  translatable: string;
+  languages: string;
+  defaultLanguage: string;
+  dataTab: string;
+  languagesHint: string;
+  enabledLanguages: string;
+  allLanguages: string;
+  noLanguages: string;
+  makeDefault: string;
+  enableLanguage: string;
+  disableLanguage: string;
+  searchLanguages: string;
 }

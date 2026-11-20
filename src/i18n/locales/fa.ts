@@ -140,6 +140,18 @@ const messages: StorageLabels = {
   pickChoose: 'انتخاب',
   pickChooseN: 'انتخاب (%s)',
   cancel: 'لغو',
+  translatable: 'قابل ترجمه',
+  languages: 'زبان‌ها',
+  defaultLanguage: 'پیش‌فرض',
+  dataTab: 'محتوا',
+  languagesHint: 'فیلدهای قابل ترجمه برای هر زبان فعال یک مقدار دارند. بدون ترجمه، زبان پیش‌فرض نمایش داده می‌شود؛ صفحه به همان زبان منتشر می‌شود.',
+  enabledLanguages: 'زبان‌های سایت',
+  allLanguages: 'همه زبان‌ها',
+  noLanguages: 'زبانی نیست: فیلدها ترجمه نمی‌شوند.',
+  makeDefault: 'پیش‌فرض کن',
+  enableLanguage: 'فعال کردن',
+  disableLanguage: 'غیرفعال کردن',
+  searchLanguages: 'جستجوی زبان…',
 };
 
 export default messages;

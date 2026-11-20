@@ -140,6 +140,18 @@ const messages: StorageLabels = {
   pickChoose: 'Velg',
   pickChooseN: 'Velg (%s)',
   cancel: 'Avbryt',
+  translatable: 'Kan oversettes',
+  languages: 'Språk',
+  defaultLanguage: 'Standard (nb)',
+  dataTab: 'Innhold',
+  languagesHint: 'Felt som kan oversettes har en verdi per aktivert språk. Uten oversettelse vises standardspråket; siden publiseres på det.',
+  enabledLanguages: 'Nettstedets språk',
+  allLanguages: 'Alle språk',
+  noLanguages: 'Ingen språk: felt oversettes ikke.',
+  makeDefault: 'Gjør til standard',
+  enableLanguage: 'Slå på',
+  disableLanguage: 'Slå av',
+  searchLanguages: 'Finn et språk…',
 };
 
 export default messages;

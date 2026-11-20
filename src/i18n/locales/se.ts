@@ -140,6 +140,18 @@ const messages: StorageLabels = {
   pickChoose: 'Välj',
   pickChooseN: 'Välj (%s)',
   cancel: 'Avbryt',
+  translatable: 'Översättningsbar',
+  languages: 'Språk',
+  defaultLanguage: 'Standardspråk',
+  dataTab: 'Innehåll',
+  languagesHint: 'Översättningsbara fält har ett värde per aktiverat språk. Utan översättning visas standardspråket; sidan publiceras på det.',
+  enabledLanguages: 'Webbplatsens språk',
+  allLanguages: 'Alla språk',
+  noLanguages: 'Inga språk: fälten översätts inte.',
+  makeDefault: 'Gör till standard',
+  enableLanguage: 'Aktivera',
+  disableLanguage: 'Inaktivera',
+  searchLanguages: 'Sök språk…',
 };
 
 export default messages;

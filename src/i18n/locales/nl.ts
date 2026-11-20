@@ -140,6 +140,18 @@ const messages: StorageLabels = {
   pickChoose: 'Kiezen',
   pickChooseN: 'Kiezen (%s)',
   cancel: 'Annuleren',
+  translatable: 'Vertaalbaar',
+  languages: 'Talen',
+  defaultLanguage: 'Standaard',
+  dataTab: 'Inhoud',
+  languagesHint: 'Vertaalbare velden hebben een waarde per ingeschakelde taal. Zonder vertaling toont de standaardtaal; daarin wordt de pagina gepubliceerd.',
+  enabledLanguages: 'Talen van de site',
+  allLanguages: 'Alle talen',
+  noLanguages: 'Geen talen: velden worden niet vertaald.',
+  makeDefault: 'Als standaard',
+  enableLanguage: 'Inschakelen',
+  disableLanguage: 'Uitschakelen',
+  searchLanguages: 'Taal zoeken…',
 };
 
 export default messages;

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: grapesjs-storage REST contract
-  version: 1.0.0
+  version: 1.2.0
   license:
     name: MIT
     identifier: MIT
@@ -20,6 +20,12 @@ info:
       conditional (`412` when the entry moved on). A first write creates the entry (`201`).
     - **Values** are by field name. A write sets the keys it sends; `null` deletes a key; keys not
       sent stay.
+    - **Languages** (since 1.2, optional): `GET/PUT /languages` keep the site's languages
+      (`{ default: "uk-ua", enabled: ["uk-ua", "en-gb"] }`). A field with `translatable: true` then
+      holds a value per language: `{ "uk-ua": …, "en-gb": … }` (codes: language-region, lower case);
+      a translated `group` / `repeater` holds its whole value per language. A missing language
+      falls back to the default one. The editor publishes the default language; a server fills the
+      other languages into the elements with `data-storage-field` for the language of the address.
     - Errors are `{"error": "…"}`; invalid input `422` with `{"errors": {"field": ["…"]}}`.
 
     luna-pages implements this contract under `/v1/content` (and `/internal/v1/apps/{app}/content`).
@@ -34,6 +40,8 @@ tags:
     description: Templates and their fields.
   - name: entries
     description: Entries of templates.
+  - name: languages
+    description: The languages of the site's data.
 paths:
   /templates:
     get:
@@ -196,6 +204,38 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "412": { $ref: "#/components/responses/Precondition" }
         "422": { $ref: "#/components/responses/Invalid" }
+  /languages:
+    get:
+      tags: [languages]
+      summary: The site's languages
+      operationId: getLanguages
+      description: '`404` (or no such route): the site has no languages, fields are not translated.'
+      responses:
+        "200":
+          description: The languages.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Languages" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [languages]
+      summary: Set the site's languages
+      operationId: putLanguages
+      description: The default first in `enabled`. An empty `enabled` clears them.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Languages" }
+      responses:
+        "200":
+          description: Saved.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Languages" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/Invalid" }
 components:
   parameters:
     ID:
@@ -258,6 +298,7 @@ components:
           enum: [text, textarea, number, range, email, url, wysiwyg, image, file, gallery, select, checkbox, radio, button_group, true_false, link, page_link, date, datetime, time, color, group, repeater, tab, accordion, message]
         label: { type: string }
         required: { type: boolean }
+        translatable: { type: boolean, description: "A value per language: `{ \"uk-ua\": …, \"en-gb\": … }` (see /languages). Not on fields inside a translatable group / repeater." }
         instructions: { type: string }
         width: { type: integer, minimum: 1, maximum: 99 }
         default: {}
@@ -323,7 +364,19 @@ components:
         booleans (`true_false`), arrays of values (several choices, pages), `{url, alt}` /
         `{url, name}` / `{url, title, target}` (image, file, link), objects (`group`), arrays of
         objects (`repeater`, `gallery`); dates `YYYY-MM-DD`, `YYYY-MM-DDTHH:mm`, `HH:mm`.
+        A `translatable` field: an object by language code (`{ "uk-ua": "Привіт", "en-gb": "Hello" }`)
+        whose values have the shapes above.
       additionalProperties: true
+    Languages:
+      type: object
+      properties:
+        default: { type: string, pattern: "^[a-z]{2,3}-[a-z0-9]{2,4}$", example: uk-ua }
+        enabled:
+          type: array
+          description: Enabled languages in order, the default first.
+          items: { type: string, pattern: "^[a-z]{2,3}-[a-z0-9]{2,4}$" }
+          example: [uk-ua, en-gb, pl-pl]
+      required: [default, enabled]
     Entry:
       type: object
       properties:

@@ -140,6 +140,18 @@ const messages: StorageLabels = {
   pickChoose: 'Tria',
   pickChooseN: 'Tria (%s)',
   cancel: 'Cancel·la',
+  translatable: 'Traduïble',
+  languages: 'Idiomes',
+  defaultLanguage: 'Per defecte',
+  dataTab: 'Contingut',
+  languagesHint: 'Els camps traduïbles tenen un valor per cada idioma activat. Sense traducció es mostra l’idioma per defecte; la pàgina es publica en aquest.',
+  enabledLanguages: 'Idiomes del lloc',
+  allLanguages: 'Tots els idiomes',
+  noLanguages: 'Sense idiomes: els camps no es tradueixen.',
+  makeDefault: 'Fes-lo per defecte',
+  enableLanguage: 'Activa',
+  disableLanguage: 'Desactiva',
+  searchLanguages: 'Cerca un idioma…',
 };
 
 export default messages;

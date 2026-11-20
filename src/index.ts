@@ -5,6 +5,8 @@ export { storagePlugin };
 export { getStorage, resolveOptions, PANEL_BUTTON_ID, META, VERSION, PLUGIN_ID } from './plugin';
 export { EVENTS, COMMANDS } from './events';
 export * from './schema';
+export { LANGUAGES, LANG_CODE_RE, languageInfo, languageName, flagOf, regionOf, normalizeLanguages, isLangMap, pickLang } from './languages';
+export type { LanguageInfo, LanguageSettings } from './languages';
 export { FIELD_TYPE, FIELD_ATTR, FieldComponents } from './editor/FieldComponents';
 export { TEMPLATE_KEY, templateIdOf } from './integration/pages';
 export { dataForm } from './ui/DataForm';

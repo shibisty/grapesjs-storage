@@ -1,3 +1,4 @@
+import type { LanguageSettings } from '../languages';
 import { MemoryContentStore } from './MemoryContentStore';
 import type { Entry, Template } from './types';
 
@@ -54,6 +55,7 @@ export class IndexedDbContentStore extends MemoryContentStore {
               (req.result as Array<{ key: string; value: unknown }>).forEach(({ key, value }) => {
                 if (key.startsWith('template:')) this.templates.set(key.slice(9), value as Template);
                 else if (key.startsWith('entry:')) this.entries.set(key.slice(6), value as Entry);
+                else if (key === 'languages') this.languages = value as LanguageSettings;
               });
               resolve();
             };
@@ -74,6 +76,7 @@ export class IndexedDbContentStore extends MemoryContentStore {
       s.clear();
       this.templates.forEach((value, id) => s.put({ key: `template:${id}`, value }));
       this.entries.forEach((value, id) => s.put({ key: `entry:${id}`, value }));
+      if (this.languages) s.put({ key: 'languages', value: this.languages });
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
     });
@@ -86,7 +89,7 @@ export class IndexedDbContentStore extends MemoryContentStore {
 }
 
 // Every read and write waits for the database to be loaded first.
-for (const m of ['listTemplates', 'getTemplate', 'saveTemplate', 'deleteTemplate', 'listEntries', 'getEntry', 'putEntry', 'deleteEntry', 'publishEntry'] as const) {
+for (const m of ['listTemplates', 'getTemplate', 'saveTemplate', 'deleteTemplate', 'listEntries', 'getEntry', 'putEntry', 'deleteEntry', 'publishEntry', 'getLanguages', 'saveLanguages'] as const) {
   const base = MemoryContentStore.prototype[m] as (...a: unknown[]) => Promise<unknown>;
   (IndexedDbContentStore.prototype as any)[m] = async function (this: any, ...args: unknown[]) {
     await this.load();

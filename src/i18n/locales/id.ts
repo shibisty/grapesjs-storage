@@ -140,6 +140,18 @@ const messages: StorageLabels = {
   pickChoose: 'Pilih',
   pickChooseN: 'Pilih (%s)',
   cancel: 'Batal',
+  translatable: 'Dapat diterjemahkan',
+  languages: 'Bahasa',
+  defaultLanguage: 'Bawaan',
+  dataTab: 'Konten',
+  languagesHint: 'Kolom yang dapat diterjemahkan punya nilai untuk setiap bahasa aktif. Tanpa terjemahan, bahasa bawaan ditampilkan; halaman diterbitkan dalam bahasa itu.',
+  enabledLanguages: 'Bahasa situs',
+  allLanguages: 'Semua bahasa',
+  noLanguages: 'Tidak ada bahasa: kolom tidak diterjemahkan.',
+  makeDefault: 'Jadikan bawaan',
+  enableLanguage: 'Aktifkan',
+  disableLanguage: 'Nonaktifkan',
+  searchLanguages: 'Cari bahasa…',
 };
 
 export default messages;
