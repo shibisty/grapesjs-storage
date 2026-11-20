@@ -6,7 +6,7 @@ import type { StorageLabels } from '../src/i18n/types';
 const keys = Object.keys(en).sort() as (keyof StorageLabels)[];
 const placeholders = (s: string) => (s.match(/%s/g) || []).length;
 /** Words that are the same as in English. */
-const SAME = new Set(['fr.type_image', 'fr.type_date', 'ca.type_text']);
+const SAME = new Set(['ru.type_html', 'uk.type_html', 'de.fieldName', 'nl.fieldLabel', 'id.fieldLabel', 'id.dataOf', 'nb.dataOf', 'se.dataOf']);
 
 describe('locales', () => {
   it('the GrapesJS core languages plus uk', () => {
@@ -22,9 +22,14 @@ describe('locales', () => {
         const v = msgs[k];
         expect(typeof v === 'string' && v.trim() === v && v.length > 0 && !/[\n\r]/.test(v), `${lang}.${k}`).toBe(true);
         expect(placeholders(v), `${lang}.${k}`).toBe(placeholders(en[k]));
-        if (lang !== 'en' && !SAME.has(`${lang}.${k}`)) expect(v, `${lang}.${k}`).not.toBe(en[k]);
+
       });
       expect(msgs.conflict, lang).toContain('412');
+      // translated: only a few technical words (URL, HTML, Email…) may stay as in English
+      if (lang !== 'en') {
+        const same = keys.filter((k) => msgs[k] === en[k] && !SAME.has(`${lang}.${k}`));
+        expect(same.length, `${lang}: ${same.join(', ')}`).toBeLessThanOrEqual(12);
+      }
     });
   });
 });

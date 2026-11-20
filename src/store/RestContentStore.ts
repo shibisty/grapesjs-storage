@@ -1,4 +1,5 @@
-import type { Field, Values } from '../fields';
+import type { Values } from '../fields';
+import type { SchemaField } from '../schema';
 import { ConflictError, type ContentStore, type Entry, StoreError, type Template, type TemplateWrite } from './types';
 
 export interface RestOptions {
@@ -15,7 +16,7 @@ export interface RestOptions {
 interface WireTemplate {
   id: string;
   name: string;
-  fields?: Field[];
+  fields?: SchemaField[];
   data?: unknown;
   version?: string | number;
   updated_at?: string;
@@ -111,6 +112,14 @@ export class RestContentStore implements ContentStore {
     if (t.name) body.name = t.name;
     if (t.data !== undefined) body.data = t.data;
     return template(await this.request<WireTemplate>('PUT', `/templates/${encodeURIComponent(id)}`, { body }));
+  }
+
+  async deleteTemplate(id: string): Promise<void> {
+    try {
+      await this.request('DELETE', `/templates/${encodeURIComponent(id)}`);
+    } catch (e) {
+      if (!(e instanceof StoreError && e.status === 404)) throw e;
+    }
   }
 
   async listEntries(templateId?: string): Promise<Entry[]> {

@@ -1,12 +1,23 @@
 # grapesjs-storage
 
-A GrapesJS plugin for structured content — custom fields without a CMS behind them:
+Custom fields for [GrapesJS](https://grapesjs.com), without a CMS behind them:
 
-- **Templates with typed fields** — mark elements of a design as fields (`text`, `richtext`, `image`, `link`, `number`, `boolean`, `date`, `select`, `list`). A field is plain attributes (`data-field="price" data-field-type="number"`), so published HTML carries it and any renderer can fill it.
-- **Entries** — values for a template's fields under a name and an address. An entry opens **on its locked template**: the design cannot change, text, rich text and images are edited right in the canvas, everything in a form (lists with add, remove and reorder).
-- **A renderer without GrapesJS** — `render(templateHtml, values, fields)` fills the field elements. Its rules are shared with [luna-pages](https://github.com/shibisty/luna-pages)' Go renderer through one set of fixtures (`test/fixtures/fill.json`).
-- **Any backend** — a `ContentStore`: `IndexedDbContentStore` (default), `MemoryContentStore`, or `RestContentStore` for a server that implements [`openapi.yaml`](./openapi.yaml).
-- **Works alone or next to [grapesjs-pages](https://github.com/shibisty/grapesjs-pages)** — there a `template` record it opens becomes the template, and entries take over the canvas while open.
+- **Templates are groups of fields**, made in a form — like the field groups of
+  [Advanced Custom Fields](https://www.advancedcustomfields.com/): 26 field types, groups and
+  repeaters inside each other, choices, media, links, pages, conditional logic, tabs and accordions.
+- **Fields are blocks.** Each template is a category of the Block Manager (*Storage — News*), each
+  field a block. A field in a design shows the page's value — in the canvas and in `getHtml()` —
+  or, empty, a grey **[name]** box in the canvas (and nothing in the published HTML).
+- **A page picks its template** (with [grapesjs-site-pages](https://www.npmjs.com/package/grapesjs-site-pages)):
+  in the *New page* dialog. Its data is edited in the page's properties (*Data* tab), in a dialog
+  of its own (▤ on the page row) or in the *Storage* panel; the canvas follows as you type.
+- **Data records**: **+▤** on a page that has a template adds a record under it in the page tree.
+  It has no design of its own: it shows its page's design with its own data and has its own
+  address, so one page becomes the design of a whole list (news, products…).
+- **HTML fields** are edited with [Jodit](https://xdsoft.net/jodit/) (MIT), loaded from jsDelivr the
+  first time it is needed; without it a textarea with the HTML.
+- **Any backend** — templates and data live in a `ContentStore`: IndexedDB in the browser (default),
+  memory, or a REST server of [`openapi.yaml`](./openapi.yaml) (`rest: { url }`).
 - **23 languages** (the GrapesJS core locales + Ukrainian), RTL for ar/he/fa.
 
 ## Installation
@@ -17,16 +28,15 @@ npm install grapesjs-storage
 
 ```js
 import grapesjs from 'grapesjs';
-import pages from 'grapesjs-pages';
-import storage, { RestContentStore } from 'grapesjs-storage';
+import pages from 'grapesjs-site-pages';
+import storage from 'grapesjs-storage';
 
 grapesjs.init({
   container: '#gjs',
   storageManager: false,
   plugins: [pages, storage],
   pluginsOpts: {
-    [pages]: { remote: { url: '/admin/cms/editor' } },
-    [storage]: { rest: { url: '/admin/cms/content' } },   // or store: new RestContentStore({...})
+    [storage]: { rest: { url: '/admin/cms/content' } },   // or nothing: IndexedDB
   },
 });
 ```
@@ -35,72 +45,83 @@ Without a bundler the UMD build registers `grapesjsStorage` (`grapesjsStorage.de
 
 ## How it works
 
-**Marking fields.** While a template is open, the selected element gets field settings in its
-traits: *Field name*, *Field type*, *Field label*, *Required field*, *Field format* (`0.00`,
-`#,##0`, `DD.MM.YYYY`), *Field options* (for a choice: `red, green, blue`). They write:
+**Templates.** The *Storage* panel (the database button next to Layers/Styles) lists the templates;
+**+** makes one and ✎ opens it in the template editor: the fields as rows that open into their
+settings. Every field has a *Label* (the *Name* follows it until typed by hand:
+`Product title` → `product_title`), a *Type*, *Instructions*, *Required*, a *Width* in the form,
+the settings of its type and *Conditional logic*. Changes are saved as you type.
 
-```html
-<h1 data-field="title" data-field-type="text" data-field-required>Product name</h1>
-<img data-field="photo" data-field-type="image" src="placeholder.png">
-<span data-field="price" data-field-type="number" data-field-format="0.00">0.00</span>
-<ul data-field="specs" data-field-type="list">
-  <li><b data-field="name">Name</b>: <i data-field="value">Value</i></li>   <!-- the repeated item -->
-</ul>
-```
-
-A list repeats its first child (or the child marked `data-field-item`); the item's fields are the
-list's fields (one level). The *Content* panel shows the template's fields in order with
-warnings: a name used twice, a name that is not `a-z0-9_`, a choice without options, a list
-without item fields, a list in a list. The fields are saved whenever they change.
-
-**Placeholders.** The quicker way: write `{{name}}` in a template's text, or in a link's or
-an image's address (`href`, `src`, `alt`, `title`, `aria-label`). Every name no element declares
-becomes a text field; its type, format, label and *required* are set in the *Content* panel and
-kept with the template's fields. While a text is being edited, the rich text toolbar's **{…}**
-button (and *Insert field* in the panel) inserts one: a field, a new field, or the entry's own:
-
-```html
-<h1>{{entry.name}}</h1>
-<p>Price: {{price}} UAH</p>                        <!-- price: number, 0.00 → 49.50 -->
-<a href="{{entry.url}}"><img src="{{photo}}" alt="{{photo}}"></a>   <!-- photo: image -->
-<ul data-field="specs" data-field-type="list"><li>{{name}}: {{value}}</li></ul>
-```
-
-| Placeholder | Shows |
-| --- | --- |
-| `{{field}}` | the value as text: numbers and dates by the format, rich text without its tags, an image's URL in `src` and its alt text elsewhere, a link's URL in `href` and its label elsewhere; yes/no and lists show nothing (make them elements); nothing without a value |
-| `{{entry.name}}`, `{{entry.slug}}`, `{{entry.url}}` | the entry's name and address |
-| `{{entry.published_at}}` | the date it was published (`YYYY-MM-DD`) |
-
-Inside a list's item, placeholders are the item's fields. An address that ends up unsafe
-(`javascript:`) or empty drops the attribute. `script` and `style` keep their text. Anything else
-in braces (`{{Title}}`, `{{ a b }}`) stays as it is.
-
-**Entries.** *Content* → a template → its entries → **+**. The entry opens on the template's
-design, locked; its values are rendered into it:
-
-| Type | Value | Edited |
+| Category | Types | Settings |
 | --- | --- | --- |
-| `text` | string | canvas, form |
-| `richtext` | HTML string (sanitized) | canvas, form |
-| `image` | `{ url, alt }` (or a URL) | canvas (double-click → asset manager), form |
-| `link` | `{ url, label }` (or a URL) | form |
-| `number` | number | form |
-| `boolean` | `true` / `false` (false removes the element) | form |
-| `date` | `YYYY-MM-DD` | form |
-| `select` | one of the options | form |
-| `list` | array of objects with the item's fields | form |
+| Basic | `text`, `textarea`, `number`, `range`, `email`, `url` | default, placeholder, prepend / append, character limit, rows, min / max / step |
+| Content | `wysiwyg` (Jodit), `image`, `file`, `gallery` | default; gallery: min / max images |
+| Choice | `select`, `checkbox`, `radio`, `button_group`, `true_false` | choices (one per line, `value : Label`), default, several values, allow empty, side by side, on / off texts |
+| Relational | `link` (address, text, new tab), `page_link` (pages of grapesjs-site-pages) | several pages, allow empty |
+| Pickers | `date`, `datetime`, `time`, `color` | default, display format (`DD.MM.YYYY HH:mm`) |
+| Layout | `group`, `repeater`, `tab`, `accordion`, `message` | sub fields (any depth), layout block / table / row, min / max rows, add button text, row title field; accordion open at first; message text |
 
-Changes are saved (debounced) with the entry's version; a `412` shows *Changed elsewhere* with
-*Load theirs* / *Keep mine*. *Publish* checks required fields and types first.
+**Conditional logic** shows a field (or a tab, an accordion) only when its rules hold: rules
+compare a sibling field — *is equal to*, *is not equal to*, *is empty*, *is not empty*,
+*contains* — and are joined with *and*; rule groups with *or*. A hidden field is not checked and
+not saved.
 
-**With grapesjs-pages** (remote mode): its *Templates* records are the templates — the design is
-saved by grapesjs-pages, the fields by this plugin (a field write does not move the record's
-version, so the two never conflict). Opening an entry calls `PagesManager.detach()` so the page
-plugin stops saving the canvas; opening any page there ends the entry.
+**The data form** has a control per type: lines, number fields, sliders, date, time and color
+pickers, Jodit, selects, checkboxes, radios, button groups, switches; images, files and galleries
+are picked from the editor's assets (or an address, or a file from the computer); a group is a
+box of its fields; a repeater is a list of rows — **+** adds one (with the defaults), each row can
+move, be copied, collapse and go; min / max rows are kept. Tabs, accordions and messages shape
+the form. Required fields, numbers, dates, e-mails, addresses, bounds and rows are checked before
+a save.
 
-**Alone**, the plugin keeps the designs too (`ownsDesign`, automatic): ✎ on a template in the
-panel opens its design for editing; `editTemplate(id)` does the same from code.
+**With grapesjs-site-pages**
+
+| | |
+| --- | --- |
+| New page | The dialog asks for the name, the parent and the *Storage template* (only when there are templates; without this plugin pages are made right away). |
+| Blocks | Only the fields of the open page's template. |
+| Data | ✎ → *Data* tab: the template and a form of its fields; ▤ on the page row; the *Storage* panel (saved as you type). Required fields, numbers and dates are checked. |
+| Data records | **+▤** on a page with a template: a record under it, named "<template> <n>", opened with its form. It shows the page's design; design edits made there are saved to the page. Deleting the page deletes them. |
+| Breadcrumbs | grapesjs-site-pages has a *Breadcrumbs* block that draws the path in the page tree. |
+
+The page's template is kept by grapesjs-site-pages in the record's values (`storage.template`);
+its data is an entry with the page record's id (`templateId` = the template). A data record is a
+page with `dataOf` = its page.
+
+**Alone**, every template is a block category; fields show their placeholder (there is no page
+to take data from). `api.getData` / `api.setData` work on any id.
+
+**In the design.** A field is a component (`storage-field`) that holds its value — in the canvas
+and in `getHtml()` — or, empty, a grey `[name]` box in the canvas only. A **group** block
+(`storage-group`) comes with its fields inside: arrange them freely, their values come from the
+group. A **repeater** block (`storage-repeater`) holds the design of one row: the published HTML
+has it once per row of data, the canvas shows the first row editable and the others after it as
+they will look. The fields of groups and repeaters also have blocks of their own
+(*Group › Field*), to drop inside them. Tabs, accordions and messages have no blocks.
+
+A field element keeps its attributes in the published HTML, so a server can fill it too:
+
+```html
+<div data-storage-field="specs" data-storage-type="repeater" data-storage-template="…">
+  <div><div data-storage-field="key" data-storage-type="text">Burrs</div>…</div>
+  <div><div data-storage-field="key" data-storage-type="text">Speed</div>…</div>
+</div>
+```
+
+| Type | Value | HTML |
+| --- | --- | --- |
+| `text`, `email`, `url`, `color` | string | escaped text (`email`, `url`: a link) |
+| `textarea` | string | escaped, line breaks as `<br>` |
+| `wysiwyg` | HTML string (sanitized) | the HTML |
+| `number`, `range` | number | the number |
+| `select`, `checkbox`, `radio`, `button_group` | the value (several: an array) | the labels, comma separated |
+| `true_false` | `true` / `false` | the on / off text |
+| `image` / `gallery` | `{ url, alt }` / an array of them | `<img>` |
+| `file` | `{ url, name }` | a download link |
+| `link` | `{ url, title, target }` | `<a>` |
+| `page_link` | a page id (several: an array) | links to the pages' addresses |
+| `date`, `datetime`, `time` | `YYYY-MM-DD`, `YYYY-MM-DDTHH:mm`, `HH:mm` | in the display format |
+| `group` | an object of its fields | — (a container) |
+| `repeater` | an array of such objects | — (a container) |
 
 ## Options
 
@@ -109,10 +130,10 @@ panel opens its design for editing; `editTemplate(id)` does the same from code.
 | `store` | IndexedDB | Any `ContentStore`. |
 | `rest` | — | `{ url, headers?, credentials?, fetch? }`: a `RestContentStore`. |
 | `dbName` | `'gjs-storage'` | Database of the default store. |
-| `ownsDesign` | auto | Keep the templates' designs (default: when no grapesjs-pages runs). |
 | `autosaveDelay` | `600` | Save debounce, ms. |
+| `htmlEditor` | Jodit from jsDelivr | `{ js, css }` your own copy; `{ js: false }` a plain textarea; `config` extra options for `Jodit.make`. |
 | `labels` | `{}` | Override any UI text. |
-| `panelId`, `sidebarContainer`, `injectCss` | auto | As in grapesjs-pages. |
+| `panelId`, `container`, `injectCss` | auto | As in grapesjs-site-pages. |
 
 ## API
 
@@ -120,29 +141,34 @@ panel opens its design for editing; `editTemplate(id)` does the same from code.
 
 ```ts
 store: ContentStore
-editTemplate(id, name?)
-fields(): { fields, warnings }
-openEntry(id): Promise<Entry>
-createEntry(templateId, { name?, slug?, values? }): Promise<Entry>
-closeEntry()
-current(): { entry, template, values, problems } | null
-setValue(name, value)
-setMeta({ name?, slug? })
-publish(): Promise<Entry>
-removeEntry(id)
-flush()
+templates(): Template[]                       // { id, name, fields: [{ name, type, label?, required? }] }
+reload(): Promise<Template[]>
+createTemplate({ name?, fields? }): Promise<Template>
+updateTemplate(id, { name?, fields? }): Promise<Template>
+removeTemplate(id): Promise<void>             // and its data
+current(): { recordId, templateId, values } | null   // the open page
+getData(recordId): Promise<values>
+setData(recordId, values): Promise<void>      // null deletes a key
+addData(pageId, { name?, values? }): Promise<PageRecord>   // a data record (grapesjs-site-pages)
+flush(): Promise<void>
 ```
 
-Pure helpers: `render(html, values, fields, entry?)`, `sanitizeHtml`, `collectFields`,
-`fieldsOfHtml`, `placeholderNames`, `checkValues`, `formatNumber`, `formatDate`. Events: `storage:template`, `storage:fields`, `storage:entry`,
-`storage:values`, `storage:saved`, `storage:state`, `storage:change`. Commands: `storage:open`,
+Helpers: `normalizeFields`, `parseChoices`, `conditionsHold`, `checkData`, `defaults`,
+`storedValues`, `valueHtml`, `formatDateValue`, `fieldAt`, `dataForm`, `loadJodit`. Events:
+`storage:templates`, `storage:data`, `storage:saved`, `storage:change`. Commands: `storage:open`,
 `storage:toggle`.
+
+**From 0.x.** Templates used to be designs with fields marked in them (`data-field`,
+`{{placeholders}}`) and entries opened on a locked design. Now templates are groups of fields and
+pages hold the design. Existing templates keep their fields (older types are mapped: `richtext`
+→ `wysiwyg`, `boolean` → `true_false`, `list` → `repeater` with its fields); the older helpers
+(`render`, `fieldsOfHtml`, `collectFields`…) are still exported for servers.
 
 ## Storage
 
 ```ts
 interface ContentStore {
-  listTemplates(); getTemplate(id); saveTemplate(id, { name?, fields, data? });
+  listTemplates(); getTemplate(id); saveTemplate(id, { name?, fields }); deleteTemplate?(id);
   listEntries(templateId?); getEntry(id);
   putEntry(entry, ifVersion?);        // values merge; null deletes a key; ConflictError on 412
   deleteEntry(id, ifVersion?);
@@ -150,9 +176,9 @@ interface ContentStore {
 }
 ```
 
-`RestContentStore` follows [`openapi.yaml`](./openapi.yaml): `GET/PUT /templates/{id}`,
-`GET /entries?template=`, `GET/PUT/DELETE /entries/{id}`, `POST /entries/{id}/publish`.
-luna-pages serves it at `/v1/content`.
+`RestContentStore` follows [`openapi.yaml`](./openapi.yaml): `GET /templates`,
+`GET/PUT/DELETE /templates/{id}`, `GET /entries?template=`, `GET/PUT/DELETE /entries/{id}`,
+`POST /entries/{id}/publish`. An entry's id is the page's id.
 
 ## Development
 

@@ -4,86 +4,143 @@
 export interface StorageLabels {
   content: string;
   templates: string;
-  entries: string;
-  newEntry: string;
-  defaultEntryName: string;
+  newTemplate: string;
+  defaultTemplateName: string;
   noTemplates: string;
-  noEntries: string;
-  /** %s — name */
-  fieldsOf: string;
+  templateHint: string;
+  templateName: string;
+  fields: string;
+  addField: string;
   noFields: string;
+  fieldLabel: string;
   fieldName: string;
   fieldType: string;
-  fieldLabel: string;
   fieldRequired: string;
-  fieldFormat: string;
-  fieldOptions: string;
-  type_text: string;
-  type_richtext: string;
-  type_image: string;
-  type_link: string;
-  type_number: string;
-  type_boolean: string;
-  type_date: string;
-  type_select: string;
-  type_list: string;
-  /** %s — field */
-  warn_duplicate: string;
-  /** %s — field */
-  warn_invalidName: string;
-  /** %s — field */
-  warn_noOptions: string;
-  /** %s — field */
-  warn_emptyList: string;
-  /** %s — field */
-  warn_nestedList: string;
-  /** %s — field */
-  warn_unknownType: string;
-  name: string;
-  slug: string;
-  back: string;
+  moveUp: string;
+  moveDown: string;
+  remove: string;
+  removeTemplate: string;
+  /** %s — template name */
+  confirmRemoveTemplate: string;
+  /** The choice of a template in the page dialogs */
+  template: string;
+  noTemplate: string;
+  /** Tab / button of a page's data */
+  data: string;
+  /** %s — page name */
+  dataOf: string;
+  noTemplateData: string;
+  addData: string;
+  dataHint: string;
   saving: string;
   saved: string;
   /** %s — error */
   saveError: string;
-  publish: string;
-  published: string;
-  draft: string;
-  remove: string;
-  /** %s — name */
-  confirmRemove: string;
-  addItem: string;
-  moveUp: string;
-  moveDown: string;
-  removeItem: string;
-  url: string;
-  alt: string;
-  linkLabel: string;
-  chooseImage: string;
-  /** %s — field */
-  problem_required: string;
-  /** %s — field */
-  problem_type: string;
-  /** %s — field */
-  problem_option: string;
-  /** %s — field */
-  problem_tooLong: string;
+  /** Must mention 412 */
   conflict: string;
-  reload: string;
-  overwrite: string;
-  search: string;
+  /** %s — template name */
+  blocksCategory: string;
   close: string;
-  fields: string;
-  inList: string;
-  entryOwn: string;
-  entry_name: string;
-  entry_slug: string;
-  entry_url: string;
-  entry_published_at: string;
-  newField: string;
-  newFieldName: string;
-  insertField: string;
-  copied: string;
-  placeholderHint: string;
-  warn_unknownPlaceholder: string;
+  edit: string;
+  save: string;
+  type_text: string;
+  type_textarea: string;
+  type_number: string;
+  type_range: string;
+  type_email: string;
+  type_url: string;
+  type_wysiwyg: string;
+  type_image: string;
+  type_file: string;
+  type_gallery: string;
+  type_select: string;
+  type_checkbox: string;
+  type_radio: string;
+  type_button_group: string;
+  type_true_false: string;
+  type_link: string;
+  type_page_link: string;
+  type_date: string;
+  type_datetime: string;
+  type_time: string;
+  type_color: string;
+  type_group: string;
+  type_repeater: string;
+  type_tab: string;
+  type_accordion: string;
+  type_message: string;
+  cat_basic: string;
+  cat_content: string;
+  cat_choice: string;
+  cat_relational: string;
+  cat_picker: string;
+  cat_layout: string;
+  layout_block: string;
+  layout_table: string;
+  layout_row: string;
+  problem_required: string;
+  problem_number: string;
+  problem_date: string;
+  problem_email: string;
+  problem_url: string;
+  problem_min: string;
+  problem_max: string;
+  problem_rowsMin: string;
+  problem_rowsMax: string;
+  addImage: string;
+  addRow: string;
+  allowNull: string;
+  altText: string;
+  and: string;
+  append: string;
+  buttonLabel: string;
+  choices: string;
+  choicesHint: string;
+  chooseFile: string;
+  chooseImage: string;
+  collapse: string;
+  conditionalLogic: string;
+  defaultValue: string;
+  displayFormat: string;
+  duplicate: string;
+  editTemplate: string;
+  expand: string;
+  horizontal: string;
+  instructions: string;
+  layout: string;
+  linkText: string;
+  max: string;
+  maxlength: string;
+  messageText: string;
+  min: string;
+  multiple: string;
+  newTab: string;
+  no: string;
+  noAssets: string;
+  noRows: string;
+  offText: string;
+  onText: string;
+  opContains: string;
+  opEmpty: string;
+  opIs: string;
+  opIsNot: string;
+  opNotEmpty: string;
+  openAtFirst: string;
+  or: string;
+  orGroup: string;
+  placeholder: string;
+  prepend: string;
+  removeRow: string;
+  replace: string;
+  rowTitle: string;
+  rows: string;
+  rowsMax: string;
+  rowsMin: string;
+  step: string;
+  subFields: string;
+  upload: string;
+  url: string;
+  useUrl: string;
+  width: string;
+  yes: string;
 }

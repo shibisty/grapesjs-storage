@@ -1,18 +1,12 @@
-/** Events the plugin triggers on the editor (`editor.on(EVENTS.fields, …)`). */
+/** Events the plugin triggers on the editor (`editor.on(EVENTS.data, …)`). */
 export const EVENTS = {
-  /** A template opened (`{ id, name }`) or closed (`null`). */
-  template: 'storage:template',
-  /** The open template's fields were collected. Payload: `{ fields, warnings }`. */
-  fields: 'storage:fields',
-  /** An entry opened (`Entry`) or closed (`null`). */
-  entry: 'storage:entry',
-  /** The open entry's values changed. Payload: `Values`. */
-  values: 'storage:values',
-  /** Something was saved. Payload: `{ template }` or `{ entry }`. */
+  /** The templates were (re)read or one of them changed. Payload: `Template[]`. */
+  templates: 'storage:templates',
+  /** The open page's data changed (or another page was opened). Payload: `{ recordId, templateId, values }` or `null`. */
+  data: 'storage:data',
+  /** Something was written. Payload: `{ template }` or `{ entry }`. */
   saved: 'storage:saved',
-  /** The save state of the open entry. Payload: `'idle' | 'saving' | 'error' | 'conflict'`. */
-  state: 'storage:state',
-  /** Templates or entries changed (lists to re-read). */
+  /** Templates or data changed (lists to re-read). */
   change: 'storage:change',
 } as const;
 

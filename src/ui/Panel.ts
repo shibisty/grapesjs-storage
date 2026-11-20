@@ -1,84 +1,69 @@
 import type { Editor } from 'grapesjs';
-import type { EntryMode } from '../editor/EntryMode';
-import type { TemplateMode } from '../editor/TemplateMode';
-import { EVENTS } from '../events';
-import { FIELD_TYPES, type Field, type FieldType } from '../fields';
-import { insertPlaceholder, menuItems, openMenu, placeholder } from '../editor/placeholders';
 import { getLocale, isRtlLocale, type Translator } from '../i18n';
-import type { ContentStore, Entry, Template } from '../store/types';
-import { fmt, report } from '../utils';
-import { EntryForm } from './EntryForm';
+import type { Template } from '../store/types';
+import { fmt } from '../utils';
+import { dataForm, type DataForm, type DataFormOptions } from './DataForm';
 import { h } from './dom';
+import type { HtmlEditorOptions } from './jodit';
 
 export interface PanelActions {
-  openEntry(id: string): void;
-  newEntry(templateId: string): void;
-  closeEntry(): void;
-  removeEntry(id: string): void;
-  publish(): void;
-  /** Standalone: open a template's design for editing. */
-  editTemplate?(id: string): void;
+  createTemplate(): void;
+  /** Opens a template's fields in the template editor. */
+  editTemplate(id: string): void;
+  removeTemplate(id: string): void;
+  /** Writes the open page's data (debounced by the plugin). */
+  saveData(values: Record<string, unknown>): void;
   close(): void;
 }
 
-const fold = (s: string): string =>
-  String(s || '')
-    .normalize('NFKD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase();
+/** The open page, its template and data (with grapesjs-pages). */
+export interface PageContext {
+  record: { id: string; name: string };
+  template: Template | null;
+  values: Record<string, unknown>;
+}
 
 /**
- * The "Content" panel. Shows, from the top: the open entry's form; or the
- * entries of a template; or the fields of the open template and the list
- * of templates. Pure view over the modes and the store; re-renders on the
- * plugin's events.
+ * The "Storage" panel: the open page's data (with grapesjs-pages) and the
+ * templates — groups of fields — with their editor.
  */
 export class Panel {
   readonly root: HTMLDivElement;
   private readonly title: HTMLSpanElement;
+  private readonly status: HTMLDivElement;
   private readonly body: HTMLDivElement;
-  private readonly closeBtn: HTMLButtonElement;
-  /** Entries of this template are listed (when no entry is open). */
-  private templateId: string | null = null;
-  private query = '';
-  private form: EntryForm | null = null;
-  private formFor: string | null = null;
-  private renderQueued = false;
-  private readonly offs: Array<() => void> = [];
+  private templates: Template[] = [];
+  private page: PageContext | null = null;
+  private form: DataForm | null = null;
+  private formKey = '';
 
   constructor(
     private readonly editor: Editor,
-    private readonly store: ContentStore,
-    private readonly templates: TemplateMode,
-    private readonly entries: EntryMode,
     private readonly t: Translator,
-    private readonly actions: PanelActions
+    private readonly actions: PanelActions,
+    private readonly opts: { html?: HtmlEditorOptions; withPages: () => boolean; form?: Pick<DataFormOptions, 'assets' | 'pages'> }
   ) {
     this.title = h('span', { class: 'gjss-title' });
-    this.closeBtn = h('button', { class: 'gjss-btn', type: 'button', onclick: () => actions.close() }, '✕');
+    this.status = h('div', { class: 'gjss-state', 'aria-live': 'polite' });
     this.body = h('div', { class: 'gjss-body' });
     this.root = h(
       'div',
       { class: 'gjss gjs-one-bg gjs-two-color', hidden: true },
-      h('div', { class: 'gjss-head' }, this.title, this.closeBtn),
+      h(
+        'div',
+        { class: 'gjss-head' },
+        this.title,
+        h(
+          'span',
+          {},
+          h('button', { class: 'gjss-btn', type: 'button', 'data-role': 'new-template', onclick: () => actions.createTemplate() }, '+'),
+          h('button', { class: 'gjss-btn', type: 'button', 'data-role': 'close', onclick: () => actions.close() }, '✕')
+        )
+      ),
+      this.status,
       this.body
     );
-    const on = (ev: string, fn: (...a: any[]) => void): void => {
-      editor.on(ev, fn);
-      this.offs.push(() => editor.off(ev, fn));
-    };
-    on(`${EVENTS.template} ${EVENTS.fields} ${EVENTS.change}`, () => this.renderSoon());
-    on(EVENTS.entry, (e: Entry | null) => {
-      if (e) this.templateId = e.templateId;
-      this.renderSoon();
-    });
-    on(EVENTS.state, () => this.renderState());
-    on(EVENTS.saved, () => this.renderState());
-    on(EVENTS.values, () => {
-      this.form?.update(this.entries.values);
-      this.renderProblems();
-    });
-    on('i18n:locale i18n:update', () => setTimeout(() => this.renderSoon(), 0));
+    this.relabel();
   }
 
   get isOpen(): boolean {
@@ -87,366 +72,135 @@ export class Panel {
 
   show(): void {
     this.root.hidden = false;
-    this.renderSoon();
+    this.render();
   }
 
   hide(): void {
     this.root.hidden = true;
   }
 
-  /** Lists the entries of a template (null: back to the templates). */
-  showEntries(templateId: string | null): void {
-    this.templateId = templateId;
-    this.query = '';
-    this.renderSoon();
-  }
-
-  renderSoon(): void {
-    if (this.renderQueued) return;
-    this.renderQueued = true;
-    Promise.resolve().then(() => {
-      this.renderQueued = false;
-      this.render().catch(report);
-    });
-  }
-
-  async render(): Promise<void> {
+  relabel(): void {
     const t = this.t;
     this.title.textContent = t('content');
-    this.closeBtn.title = t('close');
+    const [add, close] = this.root.querySelectorAll<HTMLButtonElement>('.gjss-head .gjss-btn');
+    add.title = t('newTemplate');
+    add.setAttribute('aria-label', t('newTemplate'));
+    close.title = t('close');
+    close.setAttribute('aria-label', t('close'));
     this.root.setAttribute('dir', isRtlLocale(getLocale(this.editor)) ? 'rtl' : 'ltr');
-    if (this.entries.active) return this.renderEntry();
-    this.form = null;
-    this.formFor = null;
-    if (this.templateId) return this.renderEntries(this.templateId);
-    const parts: HTMLElement[] = [];
-    if (this.templates.active) parts.push(this.fieldsView());
-    parts.push(await this.templatesView());
-    this.body.replaceChildren(...parts);
   }
 
-  /* ---------------------------- templates ---------------------------- */
+  setTemplates(list: Template[]): void {
+    this.templates = list;
+    this.render();
+  }
 
-  private fieldsView(): HTMLElement {
+  setPage(page: PageContext | null): void {
+    this.page = page;
+    this.render();
+  }
+
+  flash(text: string, error = false): void {
+    this.status.textContent = text;
+    this.status.classList.toggle('gjss-err', error);
+  }
+
+  render(): void {
+    if (this.root.hidden) return;
+    const keep = this.pageSection();
+    this.body.replaceChildren(...keep, ...this.templateSection());
+  }
+
+  /** The open page's data: kept between renders while it is the same page and template. */
+  private pageSection(): HTMLElement[] {
     const t = this.t;
-    const tm = this.templates;
-    const own = new Set(tm.placeholders);
-    // Into the text being edited; else to the clipboard.
-    const put = (name: string): void => {
-      if (insertPlaceholder(this.editor, name)) return;
-      void navigator.clipboard
-        ?.writeText(placeholder(name))
-        .then(() => this.flash(t('copied')))
-        .catch(() => undefined);
-    };
-    const settings = (f: Field, path: string): HTMLElement =>
-      h(
-        'div',
-        { class: 'gjss-fieldset', 'data-path': path },
-        h(
-          'select',
-          {
-            class: 'gjss-input',
-            'aria-label': t('fieldType'),
-            'data-role': 'field-type',
-            onchange: (e: Event) => tm.setFieldSettings(path, { type: (e.target as HTMLSelectElement).value as FieldType }),
-          },
-          ...FIELD_TYPES.filter((x) => x !== 'list').map((x) => h('option', { value: x, selected: x === f.type }, t(`type_${x}` as never)))
-        ),
-        f.type === 'number' || f.type === 'date'
-          ? h('input', {
-              class: 'gjss-input',
-              'aria-label': t('fieldFormat'),
-              'data-role': 'field-format',
-              placeholder: f.type === 'number' ? '0.00' : 'DD.MM.YYYY',
-              value: f.format || '',
-              onchange: (e: Event) => tm.setFieldSettings(path, { format: (e.target as HTMLInputElement).value.trim() }),
-            })
-          : null,
-        f.type === 'select'
-          ? h('input', {
-              class: 'gjss-input',
-              'aria-label': t('fieldOptions'),
-              'data-role': 'field-options',
-              placeholder: 'red, green, blue',
-              value: (f.options || []).join(', '),
-              onchange: (e: Event) =>
-                tm.setFieldSettings(path, {
-                  options: (e.target as HTMLInputElement).value
-                    .split(',')
-                    .map((o) => o.trim())
-                    .filter(Boolean),
-                }),
-            })
-          : null,
-        h('input', {
-          class: 'gjss-input',
-          'aria-label': t('fieldLabel'),
-          'data-role': 'field-label',
-          placeholder: t('fieldLabel'),
-          value: f.label || '',
-          onchange: (e: Event) => tm.setFieldSettings(path, { label: (e.target as HTMLInputElement).value.trim() }),
-        }),
-        h(
-          'label',
-          { class: 'gjss-check' },
-          h('input', {
-            type: 'checkbox',
-            'data-role': 'field-required',
-            checked: !!f.required,
-            onchange: (e: Event) => tm.setFieldSettings(path, { required: (e.target as HTMLInputElement).checked }),
-          }),
-          t('fieldRequired')
-        )
-      );
-    const row = (f: Field, prefix = ''): HTMLElement[] => {
-      const path = prefix + f.name;
-      const fromPlaceholder = own.has(path);
-      return [
+    if (!this.opts.withPages() || !this.page) {
+      this.dropForm();
+      return [];
+    }
+    const { record, template } = this.page;
+    const head = h('h4', { class: 'gjss-section' }, fmt(t('dataOf'), record.name));
+    if (!template) {
+      this.dropForm();
+      return [head, h('p', { class: 'gjss-hint' }, t('noTemplateData'))];
+    }
+    const key = `${record.id}|${template.id}|${JSON.stringify(template.fields)}`;
+    if (!this.form || key !== this.formKey) {
+      this.dropForm();
+      this.form = dataForm({
+        t,
+        fields: template.fields,
+        values: this.page.values,
+        onChange: (v) => this.actions.saveData(v),
+        html: this.opts.html,
+        language: getLocale(this.editor),
+        ...(this.opts.form || {}),
+      });
+      this.formKey = key;
+    }
+    return [head, h('div', { class: 'gjss-page-data', 'data-record': record.id }, this.form.el)];
+  }
+
+  private dropForm(): void {
+    this.form?.destroy();
+    this.form = null;
+    this.formKey = '';
+  }
+
+  private templateSection(): HTMLElement[] {
+    const t = this.t;
+    const out: HTMLElement[] = [h('h4', { class: 'gjss-section' }, t('templates'))];
+    if (!this.templates.length) {
+      out.push(h('p', { class: 'gjss-hint' }, t('noTemplates')), h('p', { class: 'gjss-hint' }, t('templateHint')));
+      return out;
+    }
+    const count = (fields: Template['fields']): number => fields.reduce((n, f) => n + 1 + (f.fields ? count(f.fields) : 0), 0);
+    const list = h('ul', { class: 'gjss-list' });
+    this.templates.forEach((tpl) => {
+      const edit = () => this.actions.editTemplate(tpl.id);
+      list.append(
         h(
           'li',
-          { class: 'gjss-fieldrow', 'data-name': f.name, style: prefix ? 'padding-inline-start:24px' : false },
-          h('code', {}, f.name),
+          {
+            class: 'gjss-item' + (tpl.id === this.page?.template?.id ? ' is-active' : ''),
+            tabindex: '0',
+            'data-id': tpl.id,
+            title: t('editTemplate'),
+            onclick: edit,
+            onkeydown: (e: Event) => {
+              const k = (e as KeyboardEvent).key;
+              if (k === 'Enter' || k === ' ') {
+                e.preventDefault();
+                edit();
+              }
+            },
+          },
+          h('div', { class: 'gjss-main' }, h('div', { class: 'gjss-name' }, tpl.name), h('div', { class: 'gjss-sub' }, `${t('fields')}: ${count(tpl.fields)}`)),
+          h('button', { class: 'gjss-act', type: 'button', 'data-role': 'edit-template', title: t('editTemplate'), 'aria-label': t('editTemplate'), onclick: (e: Event) => (e.stopPropagation(), edit()) }, '✎'),
           h(
-            'span',
-            { class: 'gjss-sub gjss-main' },
-            `${t(`type_${f.type}` as never)}${f.required ? ' *' : ''}${f.label ? ` · ${f.label}` : ''}${fromPlaceholder ? ` · ${placeholder(f.name)}` : ''}`
-          ),
-          f.type !== 'list'
-            ? h('button', { class: 'gjss-act', type: 'button', 'data-role': 'insert', title: `${t('insertField')}: ${placeholder(f.name)}`, onmousedown: (e: Event) => (e.preventDefault(), put(f.name)) }, '{…}')
-            : null
-        ),
-        ...(fromPlaceholder ? [h('li', { class: 'gjss-fieldrow', style: prefix ? 'padding-inline-start:24px' : false }, settings(f, path))] : []),
-        ...(f.fields || []).flatMap((s) => row(s, f.name + '.')),
-      ];
-    };
-    const insertBtn = h(
-      'button',
-      { class: 'gjss-secondary', type: 'button', 'data-role': 'insert-menu' },
-      `{…} ${t('insertField')}`
-    );
-    insertBtn.addEventListener('mousedown', (e) => {
-      e.preventDefault();
-      openMenu(insertBtn, menuItems(tm.fields, t), t, put);
-    });
-    return h(
-      'section',
-      { class: 'gjss-fields' },
-      h('h4', { class: 'gjss-section' }, fmt(t('fieldsOf'), tm.name || '')),
-      tm.fields.length ? h('ul', { class: 'gjss-list' }, ...tm.fields.flatMap((f) => row(f))) : h('p', { class: 'gjss-hint' }, t('noFields')),
-      ...tm.warnings.map((w) => h('p', { class: 'gjss-warn', 'data-code': w.code }, fmt(t(`warn_${w.code}` as never), w.field))),
-      h('p', { class: 'gjss-hint', 'data-role': 'placeholder-hint' }, t('placeholderHint')),
-      insertBtn,
-      h(
-        'button',
-        { class: 'gjss-secondary', type: 'button', 'data-role': 'entries', onclick: () => tm.id && this.showEntries(tm.id) },
-        `${t('entries')} →`
-      )
-    );
-  }
-
-  private search(onInput: () => void): HTMLInputElement {
-    const inp = h('input', {
-      class: 'gjss-search',
-      type: 'search',
-      placeholder: this.t('search'),
-      'aria-label': this.t('search'),
-      value: this.query,
-      oninput: () => {
-        this.query = inp.value;
-        onInput();
-      },
-    });
-    return inp;
-  }
-
-  private async templatesView(): Promise<HTMLElement> {
-    const t = this.t;
-    let list: Template[] = [];
-    try {
-      list = await this.store.listTemplates();
-    } catch (e) {
-      return h('p', { class: 'gjss-warn' }, (e as Error).message);
-    }
-    const ul = h('ul', { class: 'gjss-list' });
-    const draw = (): void => {
-      const q = fold(this.query);
-      ul.replaceChildren(
-        ...list
-          .filter((x) => !q || fold(x.name).includes(q))
-          .map((x) =>
-            h(
-              'li',
-              {
-                class: 'gjss-item' + (x.id === this.templates.id ? ' is-active' : ''),
-                tabindex: '0',
-                'data-id': x.id,
-                onclick: () => this.showEntries(x.id),
-                onkeydown: (e: Event) => (e as KeyboardEvent).key === 'Enter' && this.showEntries(x.id),
+            'button',
+            {
+              class: 'gjss-act',
+              type: 'button',
+              'data-role': 'remove-template',
+              title: t('removeTemplate'),
+              'aria-label': t('removeTemplate'),
+              onclick: (e: Event) => {
+                e.stopPropagation();
+                this.actions.removeTemplate(tpl.id);
               },
-              h('div', { class: 'gjss-main' }, h('div', { class: 'gjss-name' }, x.name), h('div', { class: 'gjss-sub' }, `${x.fields.length} · ${x.fields.map((f) => f.name).join(', ')}`)),
-              this.actions.editTemplate
-                ? h(
-                    'button',
-                    {
-                      class: 'gjss-act',
-                      type: 'button',
-                      title: x.name,
-                      'data-role': 'edit-template',
-                      onclick: (e: Event) => {
-                        e.stopPropagation();
-                        this.actions.editTemplate!(x.id);
-                      },
-                    },
-                    '✎'
-                  )
-                : null
-            )
+            },
+            '✕'
           )
+        )
       );
-    };
-    draw();
-    return h(
-      'section',
-      { class: 'gjss-templates' },
-      h('h4', { class: 'gjss-section' }, t('templates')),
-      list.length ? this.search(draw) : null,
-      list.length ? ul : h('p', { class: 'gjss-hint' }, t('noTemplates'))
-    );
-  }
-
-  /* ----------------------------- entries ----------------------------- */
-
-  private async renderEntries(templateId: string): Promise<void> {
-    const t = this.t;
-    let template: Template | undefined;
-    let list: Entry[] = [];
-    try {
-      [template, list] = await Promise.all([this.store.getTemplate(templateId), this.store.listEntries(templateId)]);
-    } catch (e) {
-      this.body.replaceChildren(h('p', { class: 'gjss-warn' }, (e as Error).message));
-      return;
-    }
-    const ul = h('ul', { class: 'gjss-list' });
-    const draw = (): void => {
-      const q = fold(this.query);
-      ul.replaceChildren(
-        ...list
-          .filter((e) => !q || fold(e.name).includes(q) || fold(e.slug || '').includes(q))
-          .sort((a, b) => a.name.localeCompare(b.name))
-          .map((e) =>
-            h(
-              'li',
-              {
-                class: 'gjss-item',
-                tabindex: '0',
-                'data-id': e.id,
-                onclick: () => this.actions.openEntry(e.id),
-                onkeydown: (ev: Event) => (ev as KeyboardEvent).key === 'Enter' && this.actions.openEntry(e.id),
-              },
-              h(
-                'div',
-                { class: 'gjss-main' },
-                h('div', { class: 'gjss-name' }, e.name),
-                h('div', { class: 'gjss-sub' }, [e.slug, e.status === 'published' ? t('published') : t('draft')].filter(Boolean).join(' · '))
-              )
-            )
-          )
-      );
-    };
-    draw();
-    this.body.replaceChildren(
-      h(
-        'div',
-        { class: 'gjss-bar' },
-        h('button', { class: 'gjss-btn', type: 'button', 'data-role': 'back', title: t('back'), onclick: () => this.showEntries(null) }, '←'),
-        h('h4', { class: 'gjss-section' }, `${template?.name || ''}: ${t('entries')}`),
-        h('button', { class: 'gjss-btn', type: 'button', 'data-role': 'new-entry', title: t('newEntry'), onclick: () => this.actions.newEntry(templateId) }, '+')
-      ),
-      list.length ? this.search(draw) : '',
-      list.length ? ul : h('p', { class: 'gjss-hint' }, t('noEntries'))
-    );
-  }
-
-  /* ------------------------------ entry ------------------------------ */
-
-  private stateBox = h('div', { class: 'gjss-state', 'aria-live': 'polite' });
-  private problemsBox = h('div', { class: 'gjss-problems' });
-
-  private renderEntry(): void {
-    const t = this.t;
-    const em = this.entries;
-    const e = em.entry!;
-    if (this.formFor !== e.id || !this.form) {
-      this.form = new EntryForm(this.editor, t, em.fields, em.values, (name, v) => em.setValue(name, v));
-      this.formFor = e.id;
-    }
-    const name = h('input', { class: 'gjss-input', type: 'text', name: 'name', value: e.name, oninput: () => em.setMeta({ name: name.value }) });
-    const slug = h('input', { class: 'gjss-input', type: 'text', name: 'slug', value: e.slug || '', placeholder: '/…', oninput: () => em.setMeta({ slug: slug.value }) });
-    this.body.replaceChildren(
-      h(
-        'div',
-        { class: 'gjss-bar' },
-        h('button', { class: 'gjss-btn', type: 'button', 'data-role': 'back', title: t('back'), onclick: () => this.actions.closeEntry() }, '←'),
-        h('h4', { class: 'gjss-section' }, em.template?.name || '')
-      ),
-      h('label', { class: 'gjss-meta' }, t('name'), name),
-      h('label', { class: 'gjss-meta' }, t('slug'), slug),
-      this.stateBox,
-      this.problemsBox,
-      this.form.root,
-      h(
-        'div',
-        { class: 'gjss-actions' },
-        this.store.publishEntry ? h('button', { class: 'gjss-primary', type: 'button', 'data-role': 'publish', onclick: () => this.actions.publish() }, t('publish')) : null,
-        h('button', { class: 'gjss-secondary', type: 'button', 'data-role': 'remove', onclick: () => this.actions.removeEntry(e.id) }, t('remove'))
-      )
-    );
-    this.renderState();
-    this.renderProblems();
-  }
-
-  /** Save state line (with the conflict choices). */
-  renderState(): void {
-    const t = this.t;
-    const em = this.entries;
-    if (!em.active) return;
-    const status = em.entry!.status === 'published' ? t('published') : t('draft');
-    const box = this.stateBox;
-    box.className = 'gjss-state' + (em.state === 'error' || em.state === 'conflict' ? ' gjss-err' : '');
-    if (em.state === 'conflict') {
-      box.replaceChildren(
-        h('span', {}, t('conflict')),
-        h('button', { class: 'gjss-secondary', type: 'button', 'data-role': 'reload', onclick: () => void em.reload().then(() => this.rebuild()).catch(report) }, t('reload')),
-        h('button', { class: 'gjss-secondary', type: 'button', 'data-role': 'overwrite', onclick: () => void em.overwrite().catch(report) }, t('overwrite'))
-      );
-      return;
-    }
-    const text = em.state === 'saving' ? t('saving') : em.state === 'error' ? fmt(t('saveError'), em.error) : t('saved');
-    box.replaceChildren(h('span', {}, `${status} · ${text}`));
-  }
-
-  /** What stops publishing, by field. */
-  renderProblems(): void {
-    if (!this.entries.active) return;
-    const t = this.t;
-    const problems = this.entries.problems();
-    this.problemsBox.replaceChildren(...problems.map((p) => h('p', { class: 'gjss-warn', 'data-field': p.field }, fmt(t(`problem_${p.code}` as never), p.field))));
-  }
-
-  /** Rebuilds the form (after values were replaced wholesale). */
-  rebuild(): void {
-    this.form = null;
-    this.formFor = null;
-    this.renderSoon();
-  }
-
-  flash(text: string): void {
-    this.stateBox.textContent = text;
+    });
+    out.push(list);
+    return out;
   }
 
   destroy(): void {
-    this.offs.splice(0).forEach((off) => off());
+    this.dropForm();
     this.root.remove();
   }
 }

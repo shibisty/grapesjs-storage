@@ -28,12 +28,12 @@ describe('plugin contract', () => {
     expect(resolveOptions({ sidebarContainer: '#b' }).sidebarContainer).toBe('#b');
   });
 
-  it('reports options; ownsDesign applies live', async () => {
+  it('reports options; autosaveDelay applies live, the store needs a reload', async () => {
     const s = await createEditor({ plugin: { rest: null } });
     editor = s.editor;
     const c = control(editor);
-    expect(c.getOptions()).toMatchObject({ rest: null, dbName: 'gjs-storage', ownsDesign: null, autosaveDelay: 5 });
-    expect(c.setOptions({ ownsDesign: false, autosaveDelay: 100 })).toEqual({ applied: ['ownsDesign'], reload: ['autosaveDelay'] });
-    expect(c.getOptions()).toMatchObject({ ownsDesign: false, autosaveDelay: 5 });
+    expect(c.getOptions()).toMatchObject({ rest: null, dbName: 'gjs-storage', autosaveDelay: 5, htmlEditor: {} });
+    expect(c.setOptions({ autosaveDelay: 100, dbName: 'x' })).toEqual({ applied: ['autosaveDelay'], reload: ['dbName'] });
+    expect(c.getOptions()).toMatchObject({ autosaveDelay: 100, dbName: 'gjs-storage' });
   });
 });

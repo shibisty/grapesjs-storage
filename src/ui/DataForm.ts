@@ -1,0 +1,650 @@
+import type { Translator } from '../i18n';
+import {
+  checkData,
+  conditionsHold,
+  type DataProblem,
+  type DataValues,
+  defaults,
+  fieldTitle,
+  type FileValue,
+  type ImageValue,
+  isEmptyValue,
+  type LinkValue,
+  type SchemaField,
+  storedValues,
+} from '../schema';
+import { fmt } from '../utils';
+import { h } from './dom';
+import { attachHtmlEditor, type HtmlEditorOptions } from './jodit';
+
+/** Where image and file fields pick from: the editor's assets. */
+export interface AssetSource {
+  list(kind: 'image' | 'file'): Array<{ url: string; name?: string }>;
+  /** Adds a file from the computer; resolves to its address. */
+  add?(file: File): Promise<string>;
+}
+
+export interface DataFormOptions {
+  t: Translator;
+  fields: SchemaField[];
+  values: DataValues;
+  /** Every change (already as stored: see `storedValues`). */
+  onChange?(values: DataValues): void;
+  html?: HtmlEditorOptions;
+  language?: string;
+  assets?: AssetSource;
+  /** Pages a `page_link` field can point to. */
+  pages?(): Array<{ id: string; name: string; slug?: string }>;
+}
+
+export interface DataForm {
+  el: HTMLElement;
+  /** The values as stored; empty top-level fields are `null` (they delete the key). */
+  read(): DataValues;
+  problems(): DataProblem[];
+  /** Messages of the problems, for a dialog (the fields get marked). */
+  problemText(): string;
+  destroy(): void;
+}
+
+const clone = <T>(v: T): T => (v === undefined ? v : JSON.parse(JSON.stringify(v)));
+let uid = 0;
+const nextId = (p: string): string => `gjss-${p}-${++uid}`;
+
+/**
+ * The form of a page's data, like ACF's: a control per field — lines,
+ * numbers, ranges, pickers, Jodit for HTML, selects, checkboxes, radios,
+ * button groups, switches, media from the editor's assets, links, pages —
+ * groups as fieldsets, repeaters as rows added with +, reordered, removed
+ * and collapsed; tabs, accordions and messages shape it; fields with
+ * conditional logic show only when their rules hold.
+ */
+export function dataForm(o: DataFormOptions): DataForm {
+  const { t } = o;
+  const state: DataValues = { ...defaults(o.fields), ...clone(o.values || {}) };
+  const offs: Array<() => void> = [];
+  const checkers: Array<() => void> = [];
+  const rowsByPath = new Map<string, HTMLElement>();
+
+  const read = (): DataValues => storedValues(o.fields, state);
+  const changed = (): void => {
+    checkers.forEach((c) => c());
+    o.onChange?.(read());
+  };
+
+  /* ------------------------------ controls ------------------------------ */
+
+  const input = (f: SchemaField, obj: DataValues, type: string, id: string): HTMLInputElement => {
+    const el = h('input', {
+      id,
+      class: 'gjss-input',
+      type,
+      name: f.name,
+      placeholder: f.placeholder || null,
+      maxlength: f.maxlength ? String(f.maxlength) : null,
+      min: f.min !== undefined && (type === 'number' || type === 'range') ? String(f.min) : null,
+      max: f.max !== undefined && (type === 'number' || type === 'range') ? String(f.max) : null,
+      step: type === 'number' || type === 'range' ? String(f.step || 'any') : null,
+    }) as HTMLInputElement;
+    const v = obj[f.name];
+    el.value = v == null ? '' : type === 'datetime-local' ? String(v).replace(' ', 'T').slice(0, 16) : String(v);
+    el.addEventListener('input', () => {
+      obj[f.name] = el.value;
+      changed();
+    });
+    return el;
+  };
+
+  const affix = (f: SchemaField, el: HTMLElement): HTMLElement =>
+    f.prepend || f.append
+      ? h('div', { class: 'gjss-affix' }, f.prepend ? h('span', {}, f.prepend) : null, el, f.append ? h('span', {}, f.append) : null)
+      : el;
+
+  const choiceList = (f: SchemaField, obj: DataValues, multi: boolean, id: string): HTMLElement => {
+    const name = nextId(f.name);
+    const cur = (): string[] => (Array.isArray(obj[f.name]) ? (obj[f.name] as unknown[]).map(String) : obj[f.name] == null ? [] : [String(obj[f.name])]);
+    const items = (f.choices || []).map((c) => {
+      const box = h('input', { type: multi ? 'checkbox' : 'radio', name, value: c.value, checked: cur().includes(c.value) }) as HTMLInputElement;
+      box.addEventListener('change', () => {
+        if (multi) {
+          const next = new Set(cur());
+          if (box.checked) next.add(c.value);
+          else next.delete(c.value);
+          obj[f.name] = (f.choices || []).map((x) => x.value).filter((v) => next.has(v));
+        } else obj[f.name] = c.value;
+        changed();
+      });
+      return h('label', { class: 'gjss-check' }, box, c.label);
+    });
+    if (!multi && f.allowNull) {
+      const none = h('input', { type: 'radio', name, value: '', checked: !cur().length }) as HTMLInputElement;
+      none.addEventListener('change', () => {
+        obj[f.name] = null;
+        changed();
+      });
+      items.unshift(h('label', { class: 'gjss-check' }, none, t('noTemplate')));
+    }
+    return h('div', { id, class: `gjss-choices${f.layout === 'horizontal' ? ' is-horizontal' : ''}`, role: multi ? 'group' : 'radiogroup' }, ...items);
+  };
+
+  const select = (f: SchemaField, obj: DataValues, id: string, choices: Array<{ value: string; label: string }>): HTMLSelectElement => {
+    const multi = !!f.multiple;
+    const cur = Array.isArray(obj[f.name]) ? (obj[f.name] as unknown[]).map(String) : obj[f.name] == null ? [] : [String(obj[f.name])];
+    const el = h(
+      'select',
+      { id, class: 'gjss-input', name: f.name, multiple: multi },
+      !multi ? h('option', { value: '' }, f.placeholder || (f.allowNull ? t('noTemplate') : '—')) : null,
+      ...choices.map((c) => h('option', { value: c.value, selected: cur.includes(c.value) }, c.label))
+    ) as HTMLSelectElement;
+    if (multi) el.size = Math.min(8, Math.max(3, choices.length));
+    el.addEventListener('change', () => {
+      obj[f.name] = multi ? [...el.selectedOptions].map((x) => x.value) : el.value || null;
+      changed();
+    });
+    return el;
+  };
+
+  /** A small chooser under a media field: the editor's assets, an address, a file from the computer. */
+  const picker = (kind: 'image' | 'file', onPick: (v: { url: string; name?: string }) => void, multi = false): HTMLElement => {
+    const box = h('div', { class: 'gjss-picker', hidden: true });
+    const draw = (): void => {
+      const list = o.assets?.list(kind) || [];
+      const url = h('input', { class: 'gjss-input', type: 'url', placeholder: 'https://…', 'aria-label': t('url') }) as HTMLInputElement;
+      const use = () => {
+        if (!url.value.trim()) return;
+        onPick({ url: url.value.trim() });
+        if (!multi) box.hidden = true;
+      };
+      url.addEventListener('keydown', (e) => (e as KeyboardEvent).key === 'Enter' && (e.preventDefault(), use()));
+      const upload = o.assets?.add
+        ? (() => {
+            const file = h('input', { type: 'file', accept: kind === 'image' ? 'image/*' : null, hidden: true }) as HTMLInputElement;
+            file.addEventListener('change', async () => {
+              const f = file.files?.[0];
+              if (!f) return;
+              const u = await o.assets!.add!(f);
+              onPick({ url: u, name: f.name });
+              draw();
+              if (!multi) box.hidden = true;
+            });
+            return h('label', { class: 'gjss-secondary gjss-upload' }, t('upload'), file);
+          })()
+        : null;
+      box.replaceChildren(
+        list.length
+          ? h(
+              'div',
+              { class: `gjss-assets is-${kind}` },
+              ...list.map((a) =>
+                h(
+                  'button',
+                  {
+                    type: 'button',
+                    class: 'gjss-asset',
+                    title: a.name || a.url,
+                    onclick: () => {
+                      onPick(a);
+                      if (!multi) box.hidden = true;
+                    },
+                  },
+                  kind === 'image' ? h('img', { src: a.url, alt: '' }) : h('span', {}, a.name || a.url.split('/').pop() || a.url)
+                )
+              )
+            )
+          : h('p', { class: 'gjss-hint' }, t('noAssets')),
+        h('div', { class: 'gjss-row' }, url, h('button', { type: 'button', class: 'gjss-secondary', onclick: use }, t('useUrl')), upload)
+      );
+    };
+    (box as any).toggle = () => {
+      box.hidden = !box.hidden;
+      if (!box.hidden) draw();
+    };
+    return box;
+  };
+
+  const image = (f: SchemaField, obj: DataValues, id: string): HTMLElement => {
+    const wrap = h('div', { id, class: 'gjss-media' });
+    const draw = (): void => {
+      const v = obj[f.name] as ImageValue | undefined;
+      const pick = picker('image', (a) => {
+        obj[f.name] = { url: a.url, ...(v?.alt ? { alt: v.alt } : {}) };
+        changed();
+        draw();
+      });
+      const alt = h('input', { class: 'gjss-input', type: 'text', placeholder: t('altText'), 'aria-label': t('altText') }) as HTMLInputElement;
+      alt.value = v?.alt || '';
+      alt.addEventListener('input', () => {
+        if (obj[f.name]) (obj[f.name] as ImageValue).alt = alt.value;
+        changed();
+      });
+      wrap.replaceChildren(
+        v?.url ? h('img', { class: 'gjss-thumb', src: v.url, alt: '' }) : '',
+        h(
+          'div',
+          { class: 'gjss-row' },
+          h('button', { type: 'button', class: 'gjss-secondary', 'data-role': 'choose', onclick: () => (pick as any).toggle() }, v?.url ? t('replace') : t('chooseImage')),
+          v?.url
+            ? h('button', { type: 'button', class: 'gjss-secondary', 'data-role': 'clear', onclick: () => ((obj[f.name] = null), changed(), draw()) }, t('remove'))
+            : null
+        ),
+        v?.url ? alt : '',
+        pick
+      );
+    };
+    draw();
+    return wrap;
+  };
+
+  const file = (f: SchemaField, obj: DataValues, id: string): HTMLElement => {
+    const wrap = h('div', { id, class: 'gjss-media' });
+    const draw = (): void => {
+      const v = obj[f.name] as FileValue | undefined;
+      const pick = picker('file', (a) => {
+        obj[f.name] = { url: a.url, ...(a.name ? { name: a.name } : {}) };
+        changed();
+        draw();
+      });
+      wrap.replaceChildren(
+        v?.url ? h('a', { class: 'gjss-file', href: v.url, target: '_blank', rel: 'noopener' }, v.name || v.url.split('/').pop() || v.url) : '',
+        h(
+          'div',
+          { class: 'gjss-row' },
+          h('button', { type: 'button', class: 'gjss-secondary', 'data-role': 'choose', onclick: () => (pick as any).toggle() }, v?.url ? t('replace') : t('chooseFile')),
+          v?.url ? h('button', { type: 'button', class: 'gjss-secondary', onclick: () => ((obj[f.name] = null), changed(), draw()) }, t('remove')) : null
+        ),
+        pick
+      );
+    };
+    draw();
+    return wrap;
+  };
+
+  const gallery = (f: SchemaField, obj: DataValues, id: string): HTMLElement => {
+    const wrap = h('div', { id, class: 'gjss-media gjss-gallery' });
+    const list = (): ImageValue[] => (Array.isArray(obj[f.name]) ? (obj[f.name] as ImageValue[]) : ((obj[f.name] = []) as ImageValue[]));
+    const draw = (): void => {
+      const items = list();
+      const pick = picker(
+        'image',
+        (a) => {
+          list().push({ url: a.url });
+          changed();
+          draw();
+        },
+        true
+      );
+      const move = (i: number, d: number) => {
+        const j = i + d;
+        if (j < 0 || j >= items.length) return;
+        [items[i], items[j]] = [items[j], items[i]];
+        changed();
+        draw();
+      };
+      const full = !!f.max && items.length >= f.max;
+      wrap.replaceChildren(
+        h(
+          'div',
+          { class: 'gjss-gallery-items' },
+          ...items.map((img, i) =>
+            h(
+              'div',
+              { class: 'gjss-gallery-item' },
+              h('img', { src: img.url, alt: '' }),
+              h(
+                'div',
+                { class: 'gjss-gallery-acts' },
+                h('button', { type: 'button', class: 'gjss-act', title: t('moveUp'), disabled: i === 0, onclick: () => move(i, -1) }, '←'),
+                h('button', { type: 'button', class: 'gjss-act', title: t('moveDown'), disabled: i === items.length - 1, onclick: () => move(i, 1) }, '→'),
+                h('button', { type: 'button', class: 'gjss-act', title: t('remove'), onclick: () => (items.splice(i, 1), changed(), draw()) }, '✕')
+              )
+            )
+          )
+        ),
+        h('button', { type: 'button', class: 'gjss-secondary', 'data-role': 'add-image', disabled: full, onclick: () => (pick as any).toggle() }, `+ ${t('addImage')}`),
+        pick
+      );
+    };
+    draw();
+    return wrap;
+  };
+
+  const link = (f: SchemaField, obj: DataValues, id: string): HTMLElement => {
+    const v = (): LinkValue => (obj[f.name] && typeof obj[f.name] === 'object' ? (obj[f.name] as LinkValue) : ((obj[f.name] = { url: '' }) as LinkValue));
+    const cur = (obj[f.name] || {}) as LinkValue;
+    const url = h('input', { id, class: 'gjss-input', type: 'text', name: `${f.name}.url`, placeholder: 'https://…', 'aria-label': t('url') }) as HTMLInputElement;
+    url.value = cur.url || '';
+    const title = h('input', { class: 'gjss-input', type: 'text', name: `${f.name}.title`, placeholder: t('linkText'), 'aria-label': t('linkText') }) as HTMLInputElement;
+    title.value = cur.title || '';
+    const blank = h('input', { type: 'checkbox', name: `${f.name}.target`, checked: cur.target === '_blank' }) as HTMLInputElement;
+    url.addEventListener('input', () => ((v().url = url.value), changed()));
+    title.addEventListener('input', () => ((v().title = title.value), changed()));
+    blank.addEventListener('change', () => ((v().target = blank.checked ? '_blank' : ''), changed()));
+    return h('div', { class: 'gjss-link' }, url, title, h('label', { class: 'gjss-check' }, blank, t('newTab')));
+  };
+
+  const control = (f: SchemaField, obj: DataValues, id: string, path: string[], labels: string[]): HTMLElement => {
+    switch (f.type) {
+      case 'text':
+        return affix(f, input(f, obj, 'text', id));
+      case 'email':
+        return affix(f, input(f, obj, 'email', id));
+      case 'url':
+        return affix(f, input(f, obj, 'url', id));
+      case 'number':
+        return affix(f, input(f, obj, 'number', id));
+      case 'range': {
+        const r = input(f, obj, 'range', id);
+        const out = h('output', { class: 'gjss-range-value' }, String(obj[f.name] ?? ''));
+        r.addEventListener('input', () => (out.textContent = r.value));
+        if (obj[f.name] == null) out.textContent = '';
+        return affix(f, h('div', { class: 'gjss-range' }, r, out));
+      }
+      case 'date':
+        return input(f, obj, 'date', id);
+      case 'datetime':
+        return input(f, obj, 'datetime-local', id);
+      case 'time':
+        return input(f, obj, 'time', id);
+      case 'color': {
+        const c = input(f, obj, 'color', id);
+        if (obj[f.name] == null) c.value = '#000000';
+        const clear = h('button', { type: 'button', class: 'gjss-act', title: t('remove'), onclick: () => ((obj[f.name] = null), (c.value = '#000000'), changed()) }, '✕');
+        return h('div', { class: 'gjss-row' }, c, clear);
+      }
+      case 'textarea':
+      case 'wysiwyg': {
+        const area = h('textarea', {
+          id,
+          class: 'gjss-input',
+          name: f.name,
+          rows: String(f.rows || (f.type === 'wysiwyg' ? 8 : 4)),
+          placeholder: f.placeholder || null,
+          maxlength: f.maxlength ? String(f.maxlength) : null,
+        }) as HTMLTextAreaElement;
+        area.value = obj[f.name] == null ? '' : String(obj[f.name]);
+        area.addEventListener('input', () => ((obj[f.name] = area.value), changed()));
+        if (f.type === 'wysiwyg') {
+          // Jodit replaces the textarea once loaded (in the DOM).
+          queueMicrotask(() =>
+            offs.push(attachHtmlEditor(area, (v) => ((obj[f.name] = v), changed()), { ...(o.html || {}), language: o.language, dark: true }))
+          );
+        }
+        return area;
+      }
+      case 'select':
+        return select(f, obj, id, f.choices || []);
+      case 'checkbox':
+        return choiceList(f, obj, true, id);
+      case 'radio':
+        return choiceList(f, obj, false, id);
+      case 'button_group': {
+        const btns = (f.choices || []).map((c) =>
+          h(
+            'button',
+            {
+              type: 'button',
+              class: 'gjss-bg' + (String(obj[f.name] ?? '') === c.value ? ' is-active' : ''),
+              'data-value': c.value,
+              'aria-pressed': String(obj[f.name] ?? '') === c.value ? 'true' : 'false',
+              onclick: (e: Event) => {
+                obj[f.name] = c.value;
+                const bar = (e.currentTarget as HTMLElement).parentElement!;
+                bar.querySelectorAll<HTMLElement>('.gjss-bg').forEach((b) => {
+                  const on = b.dataset.value === c.value;
+                  b.classList.toggle('is-active', on);
+                  b.setAttribute('aria-pressed', on ? 'true' : 'false');
+                });
+                changed();
+              },
+            },
+            c.label
+          )
+        );
+        return h('div', { id, class: 'gjss-button-group', role: 'group' }, ...btns);
+      }
+      case 'true_false': {
+        const box = h('input', { id, type: 'checkbox', name: f.name, checked: obj[f.name] === true }) as HTMLInputElement;
+        const txt = h('span', { class: 'gjss-switch-text' }, obj[f.name] === true ? f.onText || '' : f.offText || '');
+        box.addEventListener('change', () => {
+          obj[f.name] = box.checked;
+          txt.textContent = box.checked ? f.onText || '' : f.offText || '';
+          changed();
+        });
+        return h('label', { class: 'gjss-switch' }, box, h('span', { class: 'gjss-switch-ui', 'aria-hidden': 'true' }), txt);
+      }
+      case 'image':
+        return image(f, obj, id);
+      case 'file':
+        return file(f, obj, id);
+      case 'gallery':
+        return gallery(f, obj, id);
+      case 'link':
+        return link(f, obj, id);
+      case 'page_link':
+        return select(f, obj, id, (o.pages?.() || []).map((p) => ({ value: p.id, label: p.slug ? `${p.name} — ${p.slug}` : p.name })));
+      case 'group': {
+        const sub = (obj[f.name] && typeof obj[f.name] === 'object' && !Array.isArray(obj[f.name]) ? obj[f.name] : (obj[f.name] = {})) as DataValues;
+        return h('div', { id, class: `gjss-group is-${f.layout || 'block'}` }, fieldList(f.fields || [], sub, path, labels));
+      }
+      case 'repeater':
+        return repeater(f, obj, id, path, labels);
+      default:
+        return input(f, obj, 'text', id);
+    }
+  };
+
+  /** Rows of a repeater: + adds one, each can move, collapse and go. */
+  const repeater = (f: SchemaField, obj: DataValues, id: string, path: string[], labels: string[]): HTMLElement => {
+    const rows = (): DataValues[] => (Array.isArray(obj[f.name]) ? (obj[f.name] as DataValues[]) : ((obj[f.name] = []) as DataValues[]));
+    const wrap = h('div', { id, class: `gjss-repeater is-${f.layout || 'block'}`, 'data-repeater': f.name });
+    const closed = new WeakSet<DataValues>();
+    const draw = (): void => {
+      const list = rows();
+      const titleOf = (row: DataValues, i: number): string => {
+        const v = f.collapsed ? row[f.collapsed] : undefined;
+        return `${i + 1}${!isEmptyValue(v) && typeof v !== 'object' ? ` · ${String(v)}` : ''}`;
+      };
+      const items = list.map((row, i) => {
+        const body = fieldList(f.fields || [], row, [...path, String(i)], [...labels.slice(0, -1), `${labels[labels.length - 1]} #${i + 1}`]);
+        const card = h('div', { class: 'gjss-rrow' + (closed.has(row) ? ' is-collapsed' : ''), 'data-row': String(i) });
+        const move = (d: number) => {
+          const j = i + d;
+          if (j < 0 || j >= list.length) return;
+          [list[i], list[j]] = [list[j], list[i]];
+          changed();
+          draw();
+        };
+        card.append(
+          h(
+            'div',
+            { class: 'gjss-rrow-head' },
+            h(
+              'button',
+              {
+                type: 'button',
+                class: 'gjss-act gjss-rrow-toggle',
+                title: closed.has(row) ? t('expand') : t('collapse'),
+                onclick: () => {
+                  if (closed.has(row)) closed.delete(row);
+                  else closed.add(row);
+                  draw();
+                },
+              },
+              closed.has(row) ? '▸' : '▾'
+            ),
+            h('span', { class: 'gjss-rrow-title' }, titleOf(row, i)),
+            h('button', { type: 'button', class: 'gjss-act', 'data-role': 'row-up', title: t('moveUp'), disabled: i === 0, onclick: () => move(-1) }, '↑'),
+            h('button', { type: 'button', class: 'gjss-act', 'data-role': 'row-down', title: t('moveDown'), disabled: i === list.length - 1, onclick: () => move(1) }, '↓'),
+            h(
+              'button',
+              {
+                type: 'button',
+                class: 'gjss-act',
+                'data-role': 'row-copy',
+                title: t('duplicate'),
+                disabled: !!f.max && list.length >= f.max,
+                onclick: () => (list.splice(i + 1, 0, clone(row)), changed(), draw()),
+              },
+              '⧉'
+            ),
+            h(
+              'button',
+              {
+                type: 'button',
+                class: 'gjss-act',
+                'data-role': 'row-remove',
+                title: t('removeRow'),
+                disabled: !!f.min && list.length <= f.min,
+                onclick: () => (list.splice(i, 1), changed(), draw()),
+              },
+              '✕'
+            )
+          ),
+          h('div', { class: 'gjss-rrow-body' }, body)
+        );
+        return card;
+      });
+      const full = !!f.max && list.length >= f.max;
+      wrap.replaceChildren(
+        ...(items.length ? items : [h('p', { class: 'gjss-hint gjss-rrow-empty' }, t('noRows'))]),
+        h(
+          'button',
+          {
+            type: 'button',
+            class: 'gjss-secondary',
+            'data-role': 'add-row',
+            disabled: full,
+            onclick: () => {
+              rows().push(defaults(f.fields || []));
+              changed();
+              draw();
+            },
+          },
+          `+ ${f.buttonLabel || t('addRow')}`
+        )
+      );
+      checkers.forEach((c) => c());
+    };
+    draw();
+    return wrap;
+  };
+
+  /** One field: label, hint, control; hidden while its conditions do not hold. */
+  const fieldRow = (f: SchemaField, obj: DataValues, path: string[], labels: string[]): HTMLElement => {
+    const id = nextId(f.name);
+    if (f.type === 'message') {
+      return h('div', { class: 'gjss-field gjss-message', 'data-field': f.name }, f.label ? h('strong', {}, f.label) : null, h('p', {}, f.message || ''));
+    }
+    const p = [...path, f.name];
+    const lab = [...labels, fieldTitle(f)];
+    const row = h(
+      'div',
+      {
+        class: `gjss-field gjss-field-${f.type}`,
+        'data-field': f.name,
+        'data-path': p.join('.'),
+        style: f.width ? `flex:0 0 calc(${f.width}% - 8px);max-width:calc(${f.width}% - 8px)` : null,
+      },
+      h(
+        f.type === 'group' || f.type === 'repeater' || f.type === 'checkbox' || f.type === 'radio' ? 'span' : 'label',
+        { class: 'gjss-label', for: f.type === 'group' || f.type === 'repeater' ? null : id },
+        fieldTitle(f),
+        f.required ? h('span', { class: 'gjss-req', 'aria-hidden': 'true' }, ' *') : null
+      ),
+      f.instructions ? h('small', { class: 'gjss-instructions' }, f.instructions) : null,
+      control(f, obj, id, p, lab)
+    );
+    rowsByPath.set(p.join('.'), row);
+    if (f.conditions?.length) {
+      const check = () => (row.hidden = !conditionsHold(f, obj));
+      checkers.push(check);
+      check();
+    }
+    row.addEventListener('input', () => row.classList.remove('has-problem'));
+    return row;
+  };
+
+  /**
+   * Fields in order. A tab starts a pane of its own (tabs side by side over
+   * the panes); an accordion starts a collapsible section that runs to the
+   * next accordion or tab.
+   */
+  const fieldList = (fields: SchemaField[], obj: DataValues, path: string[], labels: string[]): HTMLElement => {
+    const root = h('div', { class: 'gjss-fields' });
+    let target: HTMLElement = root;
+    let tabs: { bar: HTMLElement; panes: HTMLElement[] } | null = null;
+    fields.forEach((f) => {
+      if (f.type === 'tab') {
+        if (!tabs) {
+          tabs = { bar: h('div', { class: 'gjss-tabs', role: 'tablist' }), panes: [] };
+          root.append(tabs.bar);
+        }
+        const pane = h('div', { class: 'gjss-fields gjss-tab-pane', 'data-tab': f.name, hidden: tabs.panes.length > 0 });
+        const ts = tabs;
+        const btn = h(
+          'button',
+          {
+            type: 'button',
+            class: 'gjss-tab' + (ts.panes.length ? '' : ' is-active'),
+            'data-tab': f.name,
+            onclick: () => {
+              ts.panes.forEach((p) => (p.hidden = p !== pane));
+              ts.bar.querySelectorAll('.gjss-tab').forEach((b) => b.classList.toggle('is-active', b === btn));
+            },
+          },
+          fieldTitle(f)
+        );
+        ts.bar.append(btn);
+        ts.panes.push(pane);
+        root.append(pane);
+        target = pane;
+        if (f.conditions?.length) {
+          const check = () => {
+            const on = conditionsHold(f, obj);
+            btn.hidden = !on;
+            if (!on) pane.hidden = true;
+          };
+          checkers.push(check);
+          check();
+        }
+        return;
+      }
+      if (f.type === 'accordion') {
+        const holder = (tabs as { panes: HTMLElement[] } | null)?.panes.slice(-1)[0] || root;
+        const det = h('details', { class: 'gjss-accordion', open: f.open ? true : null, 'data-field': f.name }, h('summary', {}, fieldTitle(f)));
+        const inner = h('div', { class: 'gjss-fields' });
+        det.append(...(f.instructions ? [h('small', { class: 'gjss-instructions' }, f.instructions)] : []), inner);
+        holder.append(det);
+        target = inner;
+        if (f.conditions?.length) {
+          const check = () => (det.hidden = !conditionsHold(f, obj));
+          checkers.push(check);
+          check();
+        }
+        return;
+      }
+      target.append(fieldRow(f, obj, path, labels));
+    });
+    return root;
+  };
+
+  const el = h('div', { class: 'gjss-data-form' }, fieldList(o.fields, state, [], []), h('small', { class: 'gjss-hint' }, t('dataHint')));
+  const problems = (): DataProblem[] => checkData(o.fields, state);
+  return {
+    el,
+    read,
+    problems,
+    problemText: () => {
+      rowsByPath.forEach((r) => r.classList.remove('has-problem'));
+      const list = problems();
+      list.forEach((p) => {
+        // the field itself, or the closest row that is drawn
+        let parts = p.path.split('.');
+        while (parts.length && !rowsByPath.get(parts.join('.'))) parts = parts.slice(0, -1);
+        rowsByPath.get(parts.join('.'))?.classList.add('has-problem');
+      });
+      return list.map((p) => fmt(t(`problem_${p.code}` as 'problem_required'), p.field)).join('; ');
+    },
+    destroy: () => offs.splice(0).forEach((f) => f()),
+  };
+}

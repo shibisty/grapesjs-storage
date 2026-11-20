@@ -1,12 +1,13 @@
 import type { ProjectData } from 'grapesjs';
-import type { Field, Values } from '../fields';
+import type { Values } from '../fields';
+import type { SchemaField } from '../schema';
 
-/** A template: a design whose fields its entries fill. */
+/** A template: a group of fields (made in a form); pages that use it get its fields and their data. */
 export interface Template {
   id: string;
   name: string;
-  fields: Field[];
-  /** The design (GrapesJS project) — where the entry editor loads it from. */
+  fields: SchemaField[];
+  /** A design of older versions (fields marked in it); not used any more. */
   data?: ProjectData | null;
   version?: string | number;
   updatedAt?: string;
@@ -16,7 +17,10 @@ export interface Template {
 
 export type EntryStatus = 'draft' | 'published' | 'archived';
 
-/** An entry: values for a template's fields, under its own name and address. */
+/**
+ * An entry: values for a template's fields. Next to grapesjs-pages an
+ * entry is the data of a page: its id is the page record's id.
+ */
 export interface Entry {
   id: string;
   templateId: string;
@@ -35,7 +39,7 @@ export interface Entry {
 /** What a template write sends: the fields, and the design when the plugin owns it. */
 export interface TemplateWrite {
   name?: string;
-  fields: Field[];
+  fields: SchemaField[];
   data?: ProjectData | null;
 }
 

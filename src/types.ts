@@ -1,25 +1,23 @@
-import type { Field, FieldWarning, ValueProblem, Values } from './fields';
+import type { DataValues, SchemaField } from './schema';
 import type { StorageLabels } from './i18n/types';
+import type { PageRec } from './integration/pages';
 import type { RestOptions } from './store/RestContentStore';
-import type { ContentStore, Entry, Template } from './store/types';
+import type { ContentStore, Template } from './store/types';
+import type { HtmlEditorOptions } from './ui/jodit';
 
 export interface StorageOptions {
-  /** Where templates and entries live. Default: an IndexedDB store named `dbName` (or REST with `rest`). */
+  /** Where templates and data live. Default: an IndexedDB store named `dbName` (or REST with `rest`). */
   store?: ContentStore | null;
   /** A REST backend (openapi.yaml) instead of IndexedDB. */
   rest?: RestOptions | null;
   /** IndexedDB database of the default store. */
   dbName?: string;
-  /**
-   * Does the plugin keep the templates' designs itself? Default: when no
-   * grapesjs-pages runs in the editor (that one keeps them as its
-   * `template` records).
-   */
-  ownsDesign?: boolean | null;
   /** Debounce of saves, ms. */
   autosaveDelay?: number;
+  /** The editor of HTML fields (Jodit from jsDelivr by default; `{ js: false }`: a plain textarea). */
+  htmlEditor?: HtmlEditorOptions;
   labels?: Partial<StorageLabels>;
-  /** Panel that gets the "Content" button. Auto-detected when null. */
+  /** Panel that gets the "Storage" button. Auto-detected when null. */
   panelId?: string | null;
   /** CSS selector to mount the panel into. Auto-detected when null. */
   container?: string | null;
@@ -28,30 +26,38 @@ export interface StorageOptions {
   injectCss?: boolean;
 }
 
-export type ResolvedOptions = Required<Omit<StorageOptions, 'labels' | 'ownsDesign' | 'container'>> & {
+export type ResolvedOptions = Required<Omit<StorageOptions, 'labels' | 'container' | 'htmlEditor'>> & {
   labels: Partial<StorageLabels>;
-  ownsDesign: boolean | null;
+  htmlEditor: HtmlEditorOptions;
 };
+
+/** The open page's data (with grapesjs-pages). */
+export interface CurrentData {
+  recordId: string;
+  /** The page's template (a data record: its page's). */
+  templateId: string | null;
+  values: DataValues;
+}
 
 /** Public API: `editor.ContentStorage` or `getStorage(editor)`. */
 export interface StorageApi {
   store: ContentStore;
-  /** Starts editing a template's fields (grapesjs-pages calls this through its open event). */
-  editTemplate(id: string, name?: string): Promise<void>;
-  /** The open template's fields and what is wrong with them. */
-  fields(): { fields: Field[]; warnings: FieldWarning[] };
-  /** Opens an entry on its locked template. */
-  openEntry(id: string): Promise<Entry>;
-  /** Creates an entry of a template and opens it. */
-  createEntry(templateId: string, init?: { name?: string; slug?: string; values?: Values }): Promise<Entry>;
-  closeEntry(): Promise<void>;
-  /** The open entry, its values and what stops publishing. */
-  current(): { entry: Entry; template: Template | null; values: Values; problems: ValueProblem[] } | null;
-  setValue(name: string, value: unknown): void;
-  /** Renames the open entry or changes its address. */
-  setMeta(patch: { name?: string; slug?: string }): void;
-  publish(): Promise<Entry>;
-  removeEntry(id: string): Promise<void>;
+  /** The templates as last read. */
+  templates(): Template[];
+  /** Reads the templates again. */
+  reload(): Promise<Template[]>;
+  createTemplate(init?: { name?: string; fields?: SchemaField[] }): Promise<Template>;
+  updateTemplate(id: string, patch: { name?: string; fields?: SchemaField[] }): Promise<Template>;
+  /** Deletes a template and its data. */
+  removeTemplate(id: string): Promise<void>;
+  /** The open page's template and data (null: no grapesjs-pages or nothing open). */
+  current(): CurrentData | null;
+  /** A page's data. */
+  getData(recordId: string): Promise<DataValues>;
+  /** Writes a page's data (`null` deletes a key); the canvas follows when it is the open page. */
+  setData(recordId: string, values: DataValues): Promise<void>;
+  /** grapesjs-pages: a data record under a page that has a template (opens it). */
+  addData(pageId: string, init?: { name?: string; values?: DataValues }): Promise<PageRec>;
   /** Writes pending changes now. */
   flush(): Promise<void>;
 }

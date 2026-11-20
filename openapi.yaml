@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: grapesjs-storage REST contract
-  version: 0.1.0
+  version: 1.0.0
   license:
     name: MIT
     identifier: MIT
@@ -10,11 +10,12 @@ info:
     is given (`store: new RestContentStore({ url })`); authentication is the host's business (the
     `headers` option, cookies with `credentials`).
 
-    - **Templates** carry their `fields` (what the editor collects from `data-field*` attributes).
-      A template write has no version: the fields follow from the design, the last write wins.
-      `data` (the GrapesJS project) is sent only when the plugin owns the design (no
-      grapesjs-pages next to it); a write without `data` keeps it.
-    - **Entries** are values for a template's fields under a name and an address (`slug`). They
+    - **Templates** are groups of fields made in the editor's form (`string`, `number`, `date`,
+      `text`, `html`). A template write has no version: the last write wins. Deleting a template
+      deletes its entries. (Before 1.0 templates were designs with fields marked in them; a server
+      may still send and keep `data`, the editor no longer uses it.)
+    - **Entries** are values for a template's fields under a name and an address (`slug`). Next
+      to grapesjs-site-pages an entry is the data of a page: its id is the page record's id. They
       have a `version` (also the `ETag`); `If-Match: "7"` makes a write, delete or publish
       conditional (`412` when the entry moved on). A first write creates the entry (`201`).
     - **Values** are by field name. A write sets the keys it sends; `null` deletes a key; keys not
@@ -90,6 +91,15 @@ paths:
               schema: { $ref: "#/components/schemas/Template" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "422": { $ref: "#/components/responses/Invalid" }
+    delete:
+      tags: [templates]
+      summary: Delete a template
+      operationId: deleteTemplate
+      description: Deletes the template and its entries.
+      responses:
+        "204": { description: Deleted. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /entries:
     get:
       tags: [entries]
@@ -240,15 +250,49 @@ components:
       required: [error, errors]
     Field:
       type: object
+      description: A field like ACF's; the settings a type does not use are left out.
       properties:
         name: { type: string, pattern: "^[a-z][a-z0-9_]{0,63}$" }
-        type: { type: string, enum: [text, richtext, image, link, number, boolean, date, select, list] }
+        type:
+          type: string
+          enum: [text, textarea, number, range, email, url, wysiwyg, image, file, gallery, select, checkbox, radio, button_group, true_false, link, page_link, date, datetime, time, color, group, repeater, tab, accordion, message]
         label: { type: string }
         required: { type: boolean }
+        instructions: { type: string }
+        width: { type: integer, minimum: 1, maximum: 99 }
         default: {}
-        options: { type: array, items: { type: string }, description: "`select`: the allowed values." }
-        format: { type: string, description: "`number`: `0.00`, `#,##0`; `date`: `DD.MM.YYYY`." }
-        fields: { type: array, items: { $ref: "#/components/schemas/Field" }, description: "`list`: the item's fields (one level)." }
+        placeholder: { type: string }
+        prepend: { type: string }
+        append: { type: string }
+        maxlength: { type: integer }
+        rows: { type: integer }
+        min: { type: number, description: "number / range: the smallest value; repeater / gallery: the fewest items." }
+        max: { type: number }
+        step: { type: number }
+        choices: { type: array, items: { type: object, properties: { value: { type: string }, label: { type: string } }, required: [value, label] } }
+        multiple: { type: boolean }
+        allowNull: { type: boolean }
+        layout: { type: string, enum: [vertical, horizontal, block, table, row] }
+        onText: { type: string }
+        offText: { type: string }
+        format: { type: string, description: "date / datetime / time: display format, e.g. `DD.MM.YYYY HH:mm`." }
+        fields: { type: array, items: { $ref: "#/components/schemas/Field" }, description: "group / repeater: their fields." }
+        buttonLabel: { type: string }
+        collapsed: { type: string, description: "repeater: the sub field shown as a row's title." }
+        message: { type: string }
+        open: { type: boolean }
+        conditions:
+          type: array
+          description: Shown when any group holds; a group holds when all its rules hold. Rules compare a sibling field.
+          items:
+            type: array
+            items:
+              type: object
+              properties:
+                field: { type: string }
+                op: { type: string, enum: ["==", "!=", empty, "!empty", contains] }
+                value: { type: string }
+              required: [field, op]
       required: [name, type]
     Template:
       type: object
@@ -275,9 +319,10 @@ components:
     Values:
       type: object
       description: |
-        By field name: text, rich text (HTML) and select values are strings; numbers numbers (or
-        numeric strings); booleans; dates `YYYY-MM-DD`; images `{url, alt}` (or a URL); links
-        `{url, label}` (or a URL); lists arrays of objects with the item's fields.
+        By field name, as the editor stores them: strings (`wysiwyg` HTML sanitized), numbers,
+        booleans (`true_false`), arrays of values (several choices, pages), `{url, alt}` /
+        `{url, name}` / `{url, title, target}` (image, file, link), objects (`group`), arrays of
+        objects (`repeater`, `gallery`); dates `YYYY-MM-DD`, `YYYY-MM-DDTHH:mm`, `HH:mm`.
       additionalProperties: true
     Entry:
       type: object
