@@ -1,3 +1,4 @@
+import { definePlugin, registerControl, type PluginMeta } from './contract';
 import type { Editor } from 'grapesjs';
 import { EntryMode } from './editor/EntryMode';
 import { TemplateMode } from './editor/TemplateMode';
@@ -36,7 +37,7 @@ export function resolveOptions(o: StorageOptions = {}): ResolvedOptions {
     autosaveDelay: num(o.autosaveDelay, 600),
     labels: { ...(o.labels || {}) },
     panelId: o.panelId ?? null,
-    sidebarContainer: o.sidebarContainer ?? null,
+    sidebarContainer: o.container ?? o.sidebarContainer ?? null,
     injectCss: o.injectCss !== false,
   };
 }
@@ -47,7 +48,7 @@ export function resolveOptions(o: StorageOptions = {}): ResolvedOptions {
  * next to grapesjs-pages (a `template` record it opens is the template;
  * entries open on its locked design).
  */
-export default function storagePlugin(editor: Editor, userOpts: StorageOptions = {}): void {
+function storagePlugin(editor: Editor, userOpts: StorageOptions = {}): void {
   const ed = editor as EditorWithStorage;
   ed.__gjssCleanup?.();
   const opts = resolveOptions(userOpts);
@@ -261,6 +262,10 @@ export default function storagePlugin(editor: Editor, userOpts: StorageOptions =
     if (ed.__gjssCleanup === cleanup) delete ed.__gjssCleanup;
   };
   ed.__gjssCleanup = cleanup;
+  const offControl = registerControl(editor, META, () => publicOptions(opts), (patch) => {
+    if ('ownsDesign' in patch) opts.ownsDesign = typeof patch.ownsDesign === 'boolean' ? patch.ownsDesign : null;
+  });
+  on('destroy', offControl);
   on('destroy', cleanup);
   const onUnload = (): void => void api.flush().catch(report);
   window.addEventListener('beforeunload', onUnload);
@@ -282,3 +287,54 @@ export default function storagePlugin(editor: Editor, userOpts: StorageOptions =
       .catch(report);
   });
 }
+
+export const PLUGIN_ID = 'grapesjs-storage';
+/** Version of this package (a test checks it against package.json). */
+export const VERSION = '0.3.0';
+
+/** Options for forms (plugin contract). Only `ownsDesign` applies live. */
+export const META: PluginMeta = {
+  id: PLUGIN_ID,
+  version: VERSION,
+  title: 'Storage',
+  description: 'Templates with typed fields and entries that fill them.',
+  options: [
+    { key: 'rest', type: 'json', default: null, title: 'REST backend', description: '{ "url": "/admin/cms/content" }; null — IndexedDB in the browser.' },
+    { key: 'dbName', type: 'string', default: 'gjs-storage', title: 'IndexedDB database', advanced: true },
+    {
+      key: 'ownsDesign',
+      type: 'select',
+      default: null,
+      title: 'Keeps template designs',
+      choices: [
+        { value: null, label: 'Auto (unless grapesjs-pages runs)' },
+        { value: true, label: 'Yes' },
+        { value: false, label: 'No' },
+      ],
+      live: true,
+    },
+    { key: 'autosaveDelay', type: 'number', default: 600, title: 'Autosave delay, ms' },
+    { key: 'panelId', type: 'string', default: '', title: 'Panel of the "Content" button', description: 'Empty — auto.', advanced: true },
+    { key: 'container', type: 'string', default: '', title: 'Panel container (CSS selector)', description: 'Empty — auto.', aliases: ['sidebarContainer'], advanced: true },
+    { key: 'labels', type: 'json', default: {}, title: 'Texts', advanced: true },
+    { key: 'injectCss', type: 'boolean', default: true, title: 'Inject CSS', advanced: true },
+  ],
+};
+
+/** The options a form can show. */
+export function publicOptions(o: ResolvedOptions): Record<string, unknown> {
+  return {
+    rest: o.rest ? { url: o.rest.url, ...(o.rest.credentials ? { credentials: o.rest.credentials } : {}) } : null,
+    dbName: o.dbName,
+    ownsDesign: o.ownsDesign,
+    autosaveDelay: o.autosaveDelay,
+    panelId: o.panelId || '',
+    container: o.sidebarContainer || '',
+    labels: { ...o.labels },
+    injectCss: o.injectCss,
+  };
+}
+
+definePlugin(storagePlugin, META);
+
+export default storagePlugin;

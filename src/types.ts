@@ -22,11 +22,13 @@ export interface StorageOptions {
   /** Panel that gets the "Content" button. Auto-detected when null. */
   panelId?: string | null;
   /** CSS selector to mount the panel into. Auto-detected when null. */
+  container?: string | null;
+  /** Older name of `container`. */
   sidebarContainer?: string | null;
   injectCss?: boolean;
 }
 
-export type ResolvedOptions = Required<Omit<StorageOptions, 'labels' | 'ownsDesign'>> & {
+export type ResolvedOptions = Required<Omit<StorageOptions, 'labels' | 'ownsDesign' | 'container'>> & {
   labels: Partial<StorageLabels>;
   ownsDesign: boolean | null;
 };

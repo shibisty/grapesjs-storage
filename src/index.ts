@@ -2,7 +2,7 @@ import storagePlugin from './plugin';
 
 export default storagePlugin;
 export { storagePlugin };
-export { getStorage, resolveOptions, PANEL_BUTTON_ID } from './plugin';
+export { getStorage, resolveOptions, PANEL_BUTTON_ID, META, VERSION } from './plugin';
 export { EVENTS, COMMANDS } from './events';
 export * from './fields';
 export { render, sanitizeHtml, cleanUrl, formatNumber, formatDate } from './render';
