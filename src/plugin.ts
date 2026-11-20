@@ -401,8 +401,15 @@ function storagePlugin(editor: Editor, userOpts: StorageOptions = {}): void {
   });
   on('pages-manager:open', (rec: PageRec) => void readPages().then(() => syncPage(rec)).catch(report));
   // grapesjs-pages renders a record for its board (opened silently): its data first.
-  on('pages-manager:rendering', (req: { record: PageRec; waitFor?(p: Promise<unknown>): void }) => {
-    if (req?.record) req.waitFor?.(readPages().then(() => syncPage(req.record)));
+  // `placeholders`: the board shows templates — every field as its placeholder, no content;
+  // `inPlace`: the record is already in the canvas (nothing to load).
+  on('pages-manager:rendering', (req: { record: PageRec; waitFor?(p: Promise<unknown>): void; placeholders?: boolean; inPlace?: boolean }) => {
+    if (!req?.record) return;
+    fields.placeholders = !!req.placeholders;
+    if (!req.inPlace) req.waitFor?.(readPages().then(() => syncPage(req.record)));
+  });
+  on('pages-manager:rendered', () => {
+    fields.placeholders = false;
   });
   on('pages-manager:detach', () => void syncPage(null).catch(report));
   // The template of a page may change in its properties.
@@ -618,7 +625,7 @@ function storagePlugin(editor: Editor, userOpts: StorageOptions = {}): void {
 
 export const PLUGIN_ID = 'grapesjs-storage';
 /** Version of this package (a test checks it against package.json). */
-export const VERSION = '1.3.1';
+export const VERSION = '1.4.0';
 
 /** Options for forms (plugin contract). `autosaveDelay` applies live. */
 export const META: PluginMeta = {

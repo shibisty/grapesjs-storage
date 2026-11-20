@@ -25,6 +25,7 @@ const messages: StorageLabels = {
   data: 'נתונים',
   dataOf: 'נתונים: %s',
   noTemplateData: 'לדף זה אין תבנית אחסון.',
+  dataInSettings: 'תבנית „%s”. ערכים: בחרו שדה בקנבס (או body) — Component settings.',
   allData: 'כל הנתונים…',
   settingsNoPage: 'פתחו דף עם נתונים כדי לערוך אותם כאן.',
   settingsNoField: 'בתבנית הדף אין שדה "%s".',

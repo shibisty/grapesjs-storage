@@ -33,6 +33,11 @@ const CANVAS_CSS =
   `.${GHOST_CLASS}{display:contents}` +
   `[data-gjs-type="${REPEATER_TYPE}"]:empty,[data-gjs-type="${GROUP_TYPE}"]:empty{min-height:3em;outline:1px dashed #b4b4b4}`;
 
+/** The placeholder's look as an inline style (markup taken out of the canvas). */
+const PH_INLINE =
+  'display:flex;align-items:center;justify-content:center;box-sizing:border-box;width:100%;min-height:2.4em;padding:.4em .6em;' +
+  'background:#d6d6d6;color:#6b6b6b;font:12px/1.3 ui-monospace,Menlo,Consolas,monospace;border-radius:2px;overflow:hidden;white-space:nowrap';
+
 const ICONS: Record<string, string> = {
   text: 'M4 6h16v3h-6.5v10h-3V9H4z',
   number: 'M5 9h3V5h2v4h4V5h2v4h3v2h-3v2h3v2h-3v4h-2v-4h-4v4H8v-4H5v-2h3v-2H5zm5 2v2h4v-2z',
@@ -138,6 +143,11 @@ export class FieldComponents {
   private readonly rowAt = new Map<any, number>();
   /** While the canvas' ghost rows are drawn (their HTML is the canvas language's). */
   private drawing = false;
+  /**
+   * The exported markup draws every field as its placeholder (repeaters:
+   * their design row once) — grapesjs-pages' board shows templates so.
+   */
+  placeholders = false;
 
   constructor(
     private readonly editor: Editor,
@@ -182,10 +192,10 @@ export class FieldComponents {
           });
         },
         getAttrToHTML(this: any, opts: any) {
-          return { ...base.getAttrToHTML.call(this, opts), ...self.attrs(this, self.drawing, false) };
+          return { ...base.getAttrToHTML.call(this, opts), ...self.attrs(this, self.drawing || self.placeholders, self.placeholders) };
         },
         getInnerHTML(this: any) {
-          return self.inner(this, self.drawing, false);
+          return self.inner(this, self.drawing || self.placeholders, self.placeholders);
         },
         // The elements of a rich text field come from the data: they are not kept in the project.
         toJSON(this: any, opts: any) {
@@ -219,7 +229,7 @@ export class FieldComponents {
         },
         // One copy of the row design per row of data.
         getInnerHTML(this: any, opts: any) {
-          const rows = self.rows(this, self.drawing);
+          const rows = self.placeholders ? [{}] : self.rows(this, self.drawing);
           const kids = this.components();
           let html = '';
           for (let i = 0; i < rows.length; i++) {
@@ -438,7 +448,8 @@ export class FieldComponents {
   private scope(model: any, canvas: boolean): { values: DataValues; path: string[]; tplId: string } | null {
     const chain = this.containers(model);
     const tplId = this.templateOf(model, chain);
-    if (tplId && tplId !== this.ctx.templateId()) return { values: {}, path: chain.map(this.nameOf), tplId };
+    // Placeholders only (the board): no content.
+    if ((tplId && tplId !== this.ctx.templateId()) || (this.placeholders && !this.drawing)) return { values: {}, path: chain.map(this.nameOf), tplId };
     let v: any = this.ctx.values(canvas ? 'canvas' : 'export');
     for (const c of chain) {
       v = v?.[this.nameOf(c)];
@@ -478,7 +489,9 @@ export class FieldComponents {
       if (html && field.type === 'wysiwyg' && !placeholder) html = withIds(html, model.getId());
     }
     if (html || !placeholder) return html;
-    return `<span class="${PH_CLASS}" title="${esc(fieldTitle(field))}">[${esc(field.name)}]</span>`;
+    // Outside the canvas (the board's snapshots) the look comes with it.
+    const style = this.placeholders && !this.drawing ? ` style="${PH_INLINE}"` : '';
+    return `<span class="${PH_CLASS}" title="${esc(fieldTitle(field))}"${style}>[${esc(field.name)}]</span>`;
   }
 
   private injectCanvasCss(): void {

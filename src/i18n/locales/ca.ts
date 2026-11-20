@@ -25,6 +25,7 @@ const messages: StorageLabels = {
   data: 'Dades',
   dataOf: 'Dades: %s',
   noTemplateData: 'Aquesta pàgina no té plantilla d’emmagatzematge.',
+  dataInSettings: 'Plantilla «%s». Valors: selecciona un camp al llenç (o el body) — Component settings.',
   allData: 'Totes les dades…',
   settingsNoPage: 'Obre una pàgina amb dades per editar-les aquí.',
   settingsNoField: 'La plantilla de la pàgina no té el camp "%s".',

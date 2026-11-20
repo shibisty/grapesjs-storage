@@ -25,6 +25,7 @@ const messages: StorageLabels = {
   data: 'Sidans data',
   dataOf: 'Data: %s',
   noTemplateData: 'Den här sidan har ingen lagringsmall.',
+  dataInSettings: 'Mall ”%s”. Värden: välj ett fält på arbetsytan (eller body) — Component settings.',
   allData: 'Alla data…',
   settingsNoPage: 'Öppna en sida med data för att redigera värdena här.',
   settingsNoField: 'Sidans mall har inget fält "%s".',

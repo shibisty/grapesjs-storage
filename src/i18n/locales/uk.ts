@@ -25,6 +25,7 @@ const messages: StorageLabels = {
   data: 'Дані',
   dataOf: 'Дані: %s',
   noTemplateData: 'Ця сторінка не має шаблону сховища.',
+  dataInSettings: 'Шаблон «%s». Значення: виділіть поле в полотні (або body) — Component settings.',
   allData: 'Усі дані…',
   settingsNoPage: 'Відкрийте сторінку з даними, щоб редагувати їх тут.',
   settingsNoField: 'У шаблоні сторінки немає поля «%s».',

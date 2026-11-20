@@ -524,6 +524,28 @@ describe('with grapesjs-pages', () => {
     expect(blocks(editor)).toEqual([]);
   });
 
+  it('the board renders templates: every field a placeholder, a repeater its design row once', async () => {
+    const { editor } = await setup(
+      [{ id: 'p1', name: 'Home', kind: 'page', values: { 'storage.template': 'news' } }],
+      [{ id: 'p1', templateId: 'news', name: 'Home', values: { title: 'Hello', items: [{ name: 'One' }, { name: 'Two' }] } }]
+    );
+    addBlock(editor, 'news', 'title');
+    addBlock(editor, 'news', 'items');
+    await tick(10);
+    expect(editor.getHtml()).toContain('>Hello</div>');
+    const rec = { id: 'p1', name: 'Home', kind: 'page', values: { 'storage.template': 'news' } };
+    const waits: Promise<unknown>[] = [];
+    editor.trigger('pages-manager:rendering', { record: rec, placeholders: true, inPlace: true, waitFor: (p: Promise<unknown>) => waits.push(p) });
+    expect(waits.length).toBe(0); // in place: nothing to load
+    const html = editor.getHtml();
+    expect(html).not.toContain('Hello');
+    expect(html).toContain('[title]');
+    expect(html).toContain('style="display:flex');
+    expect(html.match(/\[name\]/g)!.length).toBe(1);
+    editor.trigger('pages-manager:rendered', { record: rec });
+    expect(editor.getHtml()).toContain('>Hello</div>');
+  });
+
   it('Component settings: a field edits its value, a field in a row the rows, the body all the data', async () => {
     const { editor, api } = await setup(
       [{ id: 'p1', name: 'Home', kind: 'page', values: { 'storage.template': 'news' } }],
@@ -632,18 +654,12 @@ describe('with grapesjs-pages', () => {
     expect(req.sections).toEqual([]);
   });
 
-  it('the panel shows the open page’s data and saves it as one types', async () => {
-    const { editor, api, store } = await setup([{ id: 'p1', name: 'Home', kind: 'page', values: { 'storage.template': 'news' } }]);
+  it('the panel names the open page’s template; its values are edited in Component settings', async () => {
+    const { editor } = await setup([{ id: 'p1', name: 'Home', kind: 'page', values: { 'storage.template': 'news' } }]);
     editor.runCommand('storage:open');
-    await until(() => !!panel().querySelector('.gjss-page-data input[name="title"]'));
-    const title = panel().querySelector<HTMLInputElement>('.gjss-page-data input[name="title"]')!;
-    const c = addBlock(editor, 'news', 'title');
-    title.value = 'Typed';
-    title.dispatchEvent(new Event('input'));
-    await tick(1);
-    expect(c.getEl().innerHTML).toBe('Typed'); // the canvas follows at once
-    await api.flush();
-    expect((await store.getEntry('p1'))!.values).toMatchObject({ title: 'Typed' });
+    await until(() => !!panel().querySelector('.gjss-page-data'));
+    expect(panel().querySelector('.gjss-page-data')!.textContent).toContain('News');
+    expect(panel().querySelector('.gjss-page-data input')).toBeNull();
   });
 });
 

@@ -25,6 +25,7 @@ const messages: StorageLabels = {
   data: 'داده‌ها',
   dataOf: 'داده‌ها: %s',
   noTemplateData: 'این صفحه قالب ذخیره‌سازی ندارد.',
+  dataInSettings: 'قالب «%s». مقادیر: یک فیلد را در بوم (یا body) انتخاب کنید — Component settings.',
   allData: 'همه داده‌ها…',
   settingsNoPage: 'صفحه‌ای دارای داده باز کنید تا مقادیرش را اینجا ویرایش کنید.',
   settingsNoField: 'قالب صفحه فیلد «%s» را ندارد.',

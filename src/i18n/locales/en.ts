@@ -25,6 +25,7 @@ const messages: StorageLabels = {
   data: 'Data',
   dataOf: 'Data: %s',
   noTemplateData: 'This page has no storage template.',
+  dataInSettings: 'Template “%s”. Its values: select a field in the canvas (or the body) — Component settings.',
   allData: 'All data…',
   settingsNoPage: 'Open a page with data to edit its values here.',
   settingsNoField: 'The page\'s template has no field "%s".',

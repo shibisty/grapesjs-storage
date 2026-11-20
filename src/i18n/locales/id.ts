@@ -25,6 +25,7 @@ const messages: StorageLabels = {
   data: 'Data halaman',
   dataOf: 'Data: %s',
   noTemplateData: 'Halaman ini tidak punya templat penyimpanan.',
+  dataInSettings: 'Templat “%s”. Nilai: pilih bidang di kanvas (atau body) — Component settings.',
   allData: 'Semua data…',
   settingsNoPage: 'Buka halaman berdata untuk menyunting nilainya di sini.',
   settingsNoField: 'Templat halaman tidak punya bidang "%s".',

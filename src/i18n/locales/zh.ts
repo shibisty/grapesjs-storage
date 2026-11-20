@@ -25,6 +25,7 @@ const messages: StorageLabels = {
   data: '数据',
   dataOf: '数据：%s',
   noTemplateData: '此页面没有存储模板。',
+  dataInSettings: '模板“%s”。数值：在画布中选择字段（或 body）— Component settings。',
   allData: '全部数据…',
   settingsNoPage: '打开带数据的页面即可在此编辑其值。',
   settingsNoField: '页面模板中没有字段“%s”。',

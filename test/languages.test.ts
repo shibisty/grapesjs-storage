@@ -197,11 +197,14 @@ describe('languages in the editor', () => {
     // German has no text: the default language's
     api.languages.setCurrent('de-de');
     expect(comp.getEl().innerHTML).toBe('Hello');
-    // the data tab: the bar follows, editing writes the shown language
-    click(panel().querySelector('.gjss-ptab[data-view="content"]')!);
-    await until(() => !!panel().querySelector('.gjss-lang.is-active'));
-    expect(panel().querySelector<HTMLElement>('.gjss-lang.is-active')!.dataset.lang).toBe('de-de');
-    const input = panel().querySelector<HTMLInputElement>('input[name="title"]')!;
+    // Component settings of the field: the bar follows, editing writes the shown language
+    const View = (editor.TraitManager as any).getType('storage-value');
+    const view = new View({ model: comp.getTrait('storage-value'), editor: (editor as any).getModel() });
+    document.body.appendChild(view.render().el);
+    const box = view.el as HTMLElement;
+    await until(() => !!box.querySelector('.gjss-lang.is-active'));
+    expect(box.querySelector<HTMLElement>('.gjss-lang.is-active')!.dataset.lang).toBe('de-de');
+    const input = box.querySelector<HTMLInputElement>('input[name="title"]')!;
     input.value = 'Hallo';
     input.dispatchEvent(new Event('input', { bubbles: true }));
     await until(async () => ((await store.getEntry('p1'))!.values!.title as any)['de-de'] === 'Hallo');

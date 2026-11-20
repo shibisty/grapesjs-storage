@@ -25,6 +25,7 @@ const messages: StorageLabels = {
   data: 'Daten',
   dataOf: 'Daten: %s',
   noTemplateData: 'Diese Seite hat keine Speichervorlage.',
+  dataInSettings: 'Vorlage „%s“. Werte: ein Feld im Canvas (oder body) auswählen — Component settings.',
   allData: 'Alle Daten…',
   settingsNoPage: 'Öffne eine Seite mit Daten, um ihre Werte hier zu bearbeiten.',
   settingsNoField: 'Die Vorlage der Seite hat kein Feld „%s“.',

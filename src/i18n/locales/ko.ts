@@ -25,6 +25,7 @@ const messages: StorageLabels = {
   data: '데이터',
   dataOf: '데이터: %s',
   noTemplateData: '이 페이지에는 저장소 템플릿이 없습니다.',
+  dataInSettings: '템플릿 “%s”. 값: 캔버스에서 필드(또는 body)를 선택 — Component settings.',
   allData: '모든 데이터…',
   settingsNoPage: '데이터가 있는 페이지를 열면 여기서 값을 편집할 수 있습니다.',
   settingsNoField: '페이지 템플릿에 "%s" 필드가 없습니다.',

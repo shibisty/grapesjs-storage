@@ -25,6 +25,7 @@ const messages: StorageLabels = {
   data: 'البيانات',
   dataOf: 'البيانات: %s',
   noTemplateData: 'ليس لهذه الصفحة قالب تخزين.',
+  dataInSettings: 'القالب «%s». القيم: حدّد حقلاً في اللوحة (أو body) — Component settings.',
   allData: 'كل البيانات…',
   settingsNoPage: 'افتح صفحة ذات بيانات لتعديل قيمها هنا.',
   settingsNoField: 'لا يحتوي قالب الصفحة على الحقل "%s".',

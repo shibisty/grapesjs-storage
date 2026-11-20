@@ -25,6 +25,7 @@ const messages: StorageLabels = {
   data: 'Dane',
   dataOf: 'Dane: %s',
   noTemplateData: 'Ta strona nie ma szablonu magazynu.',
+  dataInSettings: 'Szablon „%s”. Wartości: zaznacz pole na płótnie (lub body) — Component settings.',
   allData: 'Wszystkie dane…',
   settingsNoPage: 'Otwórz stronę z danymi, aby edytować je tutaj.',
   settingsNoField: 'Szablon strony nie ma pola „%s”.',

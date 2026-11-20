@@ -25,6 +25,7 @@ const messages: StorageLabels = {
   data: 'Data for siden',
   dataOf: 'Data: %s',
   noTemplateData: 'Denne siden har ingen lagringsmal.',
+  dataInSettings: 'Mal «%s». Verdier: velg et felt i lerretet (eller body) — Component settings.',
   allData: 'Alle data…',
   settingsNoPage: 'Åpne en side med data for å redigere verdiene her.',
   settingsNoField: 'Sidens mal har ikke feltet «%s».',

@@ -25,6 +25,7 @@ const messages: StorageLabels = {
   data: 'Podaci',
   dataOf: 'Podaci: %s',
   noTemplateData: 'Ova stranica nema šablon pohrane.',
+  dataInSettings: 'Šablon „%s”. Vrijednosti: odaberite polje na platnu (ili body) — Component settings.',
   allData: 'Svi podaci…',
   settingsNoPage: 'Otvorite stranicu s podacima da ih uređujete ovdje.',
   settingsNoField: 'Šablon stranice nema polje "%s".',

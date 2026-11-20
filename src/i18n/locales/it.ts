@@ -25,6 +25,7 @@ const messages: StorageLabels = {
   data: 'Dati',
   dataOf: 'Dati: %s',
   noTemplateData: 'Questa pagina non ha un modello di archivio.',
+  dataInSettings: 'Modello «%s». Valori: seleziona un campo nel canvas (o il body) — Component settings.',
   allData: 'Tutti i dati…',
   settingsNoPage: 'Apri una pagina con dati per modificarli qui.',
   settingsNoField: 'Il modello della pagina non ha il campo «%s».',

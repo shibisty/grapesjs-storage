@@ -25,6 +25,7 @@ const messages: StorageLabels = {
   data: 'Dữ liệu',
   dataOf: 'Dữ liệu: %s',
   noTemplateData: 'Trang này không có mẫu lưu trữ.',
+  dataInSettings: 'Mẫu “%s”. Giá trị: chọn một trường trên canvas (hoặc body) — Component settings.',
   allData: 'Tất cả dữ liệu…',
   settingsNoPage: 'Mở một trang có dữ liệu để sửa giá trị tại đây.',
   settingsNoField: 'Mẫu của trang không có trường "%s".',

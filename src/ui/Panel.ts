@@ -2,7 +2,7 @@ import type { Editor } from 'grapesjs';
 import { getLocale, isRtlLocale, type Translator } from '../i18n';
 import type { Template } from '../store/types';
 import { fmt } from '../utils';
-import { dataForm, type DataForm, type DataFormOptions } from './DataForm';
+import type { DataForm, DataFormOptions } from './DataForm';
 import { flagOf, LANGUAGES, languageInfo, languageName, regionOf, type LanguageSettings } from '../languages';
 import { h } from './dom';
 import type { HtmlEditorOptions } from './jodit';
@@ -45,7 +45,6 @@ export class Panel {
   private templates: Template[] = [];
   private page: PageContext | null = null;
   private form: DataForm | null = null;
-  private formKey = '';
   private view: 'content' | 'languages' = 'content';
   private query = '';
   private readonly tabs: HTMLDivElement;
@@ -151,15 +150,6 @@ export class Panel {
     }
     const keep = this.pageSection();
     this.body.replaceChildren(...keep, ...this.templateSection());
-  }
-
-  /** The data form's languages (null: none, or one only). */
-  private formLanguages(): DataFormOptions['languages'] {
-    const L = this.opts.languages;
-    const set = L?.get();
-    if (!L || !set) return null;
-    const ui = getLocale(this.editor);
-    return { enabled: set.enabled, default: set.default, current: L.current(), onSwitch: (c) => L.setCurrent(c), name: (c) => languageName(c, ui) };
   }
 
   /**
@@ -276,29 +266,14 @@ export class Panel {
       this.dropForm();
       return [head, h('p', { class: 'gjss-hint' }, t('noTemplateData'))];
     }
-    const langs = this.formLanguages();
-    const key = `${record.id}|${template.id}|${JSON.stringify(template.fields)}|${JSON.stringify(langs ? [langs.enabled, langs.default] : null)}`;
-    if (!this.form || key !== this.formKey) {
-      this.dropForm();
-      this.form = dataForm({
-        t,
-        fields: template.fields,
-        values: this.page.values,
-        onChange: (v) => this.actions.saveData(v),
-        html: this.opts.html,
-        language: getLocale(this.editor),
-        languages: langs,
-        ...(this.opts.form || {}),
-      });
-      this.formKey = key;
-    }
-    return [head, h('div', { class: 'gjss-page-data', 'data-record': record.id }, this.form.el)];
+    // The values are edited in Component settings (select a field, or the body) and the Data dialog.
+    this.dropForm();
+    return [head, h('p', { class: 'gjss-hint gjss-page-data', 'data-record': record.id }, fmt(t('dataInSettings'), template.name))];
   }
 
   private dropForm(): void {
     this.form?.destroy();
     this.form = null;
-    this.formKey = '';
   }
 
   private templateSection(): HTMLElement[] {

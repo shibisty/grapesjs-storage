@@ -25,6 +25,7 @@ const messages: StorageLabels = {
   data: 'Veriler',
   dataOf: 'Veriler: %s',
   noTemplateData: 'Bu sayfanın depolama şablonu yok.',
+  dataInSettings: 'Şablon “%s”. Değerler: tuvalde bir alan (veya body) seçin — Component settings.',
   allData: 'Tüm veriler…',
   settingsNoPage: 'Değerlerini burada düzenlemek için verili bir sayfa açın.',
   settingsNoField: 'Sayfanın şablonunda "%s" alanı yok.',

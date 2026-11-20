@@ -25,6 +25,7 @@ const messages: StorageLabels = {
   data: 'Gegevens',
   dataOf: 'Gegevens: %s',
   noTemplateData: 'Deze pagina heeft geen opslagsjabloon.',
+  dataInSettings: 'Sjabloon “%s”. Waarden: selecteer een veld in het canvas (of body) — Component settings.',
   allData: 'Alle gegevens…',
   settingsNoPage: 'Open een pagina met gegevens om ze hier te bewerken.',
   settingsNoField: 'Het sjabloon van de pagina heeft geen veld "%s".',

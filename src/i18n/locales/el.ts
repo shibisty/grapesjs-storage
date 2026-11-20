@@ -25,6 +25,7 @@ const messages: StorageLabels = {
   data: 'Δεδομένα',
   dataOf: 'Δεδομένα: %s',
   noTemplateData: 'Αυτή η σελίδα δεν έχει πρότυπο αποθήκευσης.',
+  dataInSettings: 'Πρότυπο «%s». Τιμές: επιλέξτε πεδίο στον καμβά (ή το body) — Component settings.',
   allData: 'Όλα τα δεδομένα…',
   settingsNoPage: 'Ανοίξτε μια σελίδα με δεδομένα για να τα επεξεργαστείτε εδώ.',
   settingsNoField: 'Το πρότυπο της σελίδας δεν έχει πεδίο «%s».',

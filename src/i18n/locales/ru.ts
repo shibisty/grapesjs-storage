@@ -25,6 +25,7 @@ const messages: StorageLabels = {
   data: 'Данные',
   dataOf: 'Данные: %s',
   noTemplateData: 'У этой страницы нет шаблона хранилища.',
+  dataInSettings: 'Шаблон «%s». Значения: выделите поле в холсте (или body) — Component settings.',
   allData: 'Все данные…',
   settingsNoPage: 'Откройте страницу с данными, чтобы править их здесь.',
   settingsNoField: 'В шаблоне страницы нет поля «%s».',

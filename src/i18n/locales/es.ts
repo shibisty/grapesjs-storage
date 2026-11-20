@@ -25,6 +25,7 @@ const messages: StorageLabels = {
   data: 'Datos',
   dataOf: 'Datos: %s',
   noTemplateData: 'Esta página no tiene plantilla de almacenamiento.',
+  dataInSettings: 'Plantilla «%s». Valores: selecciona un campo en el lienzo (o el body) — Component settings.',
   allData: 'Todos los datos…',
   settingsNoPage: 'Abre una página con datos para editarlos aquí.',
   settingsNoField: 'La plantilla de la página no tiene el campo «%s».',
