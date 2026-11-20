@@ -30,6 +30,11 @@ export interface StorageLabels {
   /** %s — page name */
   dataOf: string;
   noTemplateData: string;
+  /** Component settings (Trait Manager). */
+  allData: string;
+  settingsNoPage: string;
+  settingsNoField: string;
+  settingsOtherTemplate: string;
   addData: string;
   dataHint: string;
   saving: string;

@@ -139,6 +139,16 @@ A field element keeps its attributes in the published HTML, so a server can fill
 | `group` | an object of its fields | — (a container) |
 | `repeater` | an array of such objects | — (a container) |
 
+## Component settings
+
+GrapesJS's **Component settings** (Trait Manager) edits the data in place:
+
+- a selected field shows the editor of its value for the open page (a field inside a group or a repeater's row shows the whole group / the rows, with + to add one);
+- the body (wrapper) shows all the page's data;
+- **All data…** opens the Data dialog. The dialog and the panel stay; every path saves the same way (as you type, after `autosaveDelay`).
+
+Edits made elsewhere (the panel, the dialog, `setData`) redraw the settings unless you are typing in them.
+
 ## Options
 
 | Option | Default | |

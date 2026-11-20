@@ -172,6 +172,16 @@ export const CSS = `
 .gjss-lrow .gjss-act[disabled]{opacity:.2}
 .gjss-lang-badge{font-size:10px;opacity:.75;white-space:nowrap}
 .gjss-langlist{margin-bottom:6px}
+.gjss-trait{width:100%;padding:4px 2px 8px;box-sizing:border-box;text-align:left;font-size:12px}
+.gjss-trait__head{display:flex;align-items:center;gap:6px;margin:0 0 8px}
+.gjss-trait__title{flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gjss-trait .gjss-trait__all{font-size:11px;border:1px solid rgba(255,255,255,.18);padding:3px 8px}
+.gjss-trait .gjss-hint{margin:4px 0;opacity:.75}
+.gjs-trt-trait:has(.gjss-trait){display:block;padding:0 10px}
+.gjs-field:has(>.gjss-trait){background:none;padding:0;border:0;box-shadow:none}
+.gjss-trait input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]),.gjss-trait select,.gjss-trait textarea{width:100%;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.2);color:inherit;padding:5px 8px;border-radius:3px;box-sizing:border-box;font:inherit}
+.gjss-trait input[type=checkbox],.gjss-trait input[type=radio]{appearance:auto;-webkit-appearance:auto;display:inline-block;width:auto;height:auto;margin:0 6px 0 0;vertical-align:middle}
+.gjss-trait select option{color:#222}
 `;
 
 /** The Asset Manager overlay comes with the plugin's CSS. */

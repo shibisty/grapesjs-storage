@@ -8,6 +8,9 @@ export const FIELD_TYPE = 'storage-field';
 export const GROUP_TYPE = 'storage-group';
 /** A repeater: its content is the design of one row, repeated per row of data. */
 export const REPEATER_TYPE = 'storage-repeater';
+/** The trait (Component settings) that edits the data of a field — or, on the body, of the page. */
+export const VALUE_TRAIT = 'storage-value';
+const valueTrait = { type: VALUE_TRAIT, name: VALUE_TRAIT, changeProp: true };
 const TYPES = new Set([FIELD_TYPE, GROUP_TYPE, REPEATER_TYPE]);
 const CONTAINER_TYPES = new Set([GROUP_TYPE, REPEATER_TYPE]);
 
@@ -200,12 +203,20 @@ export class FieldComponents {
     } as any);
     dc.addType(GROUP_TYPE, {
       isComponent: isOf(GROUP_TYPE),
-      model: { defaults: { tagName: 'div', droppable: true } },
+      model: {
+        defaults: { tagName: 'div', droppable: true },
+        init(this: any) {
+          this.set('traits', [valueTrait]);
+        },
+      },
     } as any);
     dc.addType(REPEATER_TYPE, {
       isComponent: isOf(REPEATER_TYPE),
       model: {
         defaults: { tagName: 'div', droppable: true },
+        init(this: any) {
+          this.set('traits', [valueTrait]);
+        },
         // One copy of the row design per row of data.
         getInnerHTML(this: any, opts: any) {
           const rows = self.rows(this, self.drawing);
@@ -263,6 +274,19 @@ export class FieldComponents {
     repeaters.reverse().forEach((r) => this.ghosts(r));
   }
 
+  /**
+   * The field whose value a component shows, as it is in the page's data:
+   * the outermost storage component around it (a field inside a group or a
+   * repeater's row edits the whole group / repeater). `null` off fields.
+   */
+  topOf(model: any): { model: any; name: string; templateId: string } | null {
+    const own = [FIELD_TYPE, GROUP_TYPE, REPEATER_TYPE].includes(model?.get?.('type'));
+    const chain = this.containers(model);
+    if (!own && !chain.length) return null;
+    const top = chain[0] || model;
+    return { model: top, name: this.nameOf(top), templateId: this.templateOf(top, chain) };
+  }
+
   /** The group / repeater components around a component, outermost first. */
   private containers(model: any): any[] {
     const out: any[] = [];
@@ -278,8 +302,8 @@ export class FieldComponents {
 
   /** Traits of a field: the tag of one that holds text (an image / a link is its own element). */
   traitsOf(model: any): any[] {
-    if (model.get('tagName') === 'img' || model.get('tagName') === 'a') return [];
-    return [{ type: 'select', name: 'tagName', label: 'Tag', changeProp: true, options: TEXT_TAGS.map((x) => ({ id: x, value: x, name: x })) }];
+    if (model.get('tagName') === 'img' || model.get('tagName') === 'a') return [valueTrait];
+    return [valueTrait, { type: 'select', name: 'tagName', label: 'Tag', changeProp: true, options: TEXT_TAGS.map((x) => ({ id: x, value: x, name: x })) }];
   }
 
   /** The field's schema and value at a component (its name `.`: the repeated item itself, e.g. a gallery image). */

@@ -524,6 +524,50 @@ describe('with grapesjs-pages', () => {
     expect(blocks(editor)).toEqual([]);
   });
 
+  it('Component settings: a field edits its value, a field in a row the rows, the body all the data', async () => {
+    const { editor, api } = await setup(
+      [{ id: 'p1', name: 'Home', kind: 'page', values: { 'storage.template': 'news' } }],
+      [{ id: 'p1', templateId: 'news', name: 'Home', values: { title: 'Hello', items: [{ name: 'One', qty: 1 }] } }]
+    );
+    const title = addBlock(editor, 'news', 'title');
+    const items = addBlock(editor, 'news', 'items');
+    await tick(10);
+    const traitEl = (c: any): HTMLElement => {
+      const trait = c.getTrait('storage-value');
+      expect(trait).toBeTruthy();
+      const View = (editor.TraitManager as any).getType('storage-value');
+      const view = new View({ model: trait, editor: (editor as any).getModel() });
+      document.body.appendChild(view.render().el);
+      return view.el as HTMLElement;
+    };
+    // a field: only its value
+    const el = traitEl(title);
+    expect(el.querySelector('.gjss-trait__title')!.textContent).toBe('Title');
+    const inputs = el.querySelectorAll<HTMLInputElement>('input.gjss-input');
+    expect(inputs.length).toBe(1);
+    expect(inputs[0].value).toBe('Hello');
+    inputs[0].value = 'Changed';
+    inputs[0].dispatchEvent(new Event('input', { bubbles: true }));
+    await tick(5);
+    expect(title.getEl().innerHTML).toBe('Changed');
+    expect(api.current()!.values.items).toEqual([{ name: 'One', qty: 1 }]);
+    expect(api.current()!.values.title).toBe('Changed');
+    // a field inside a repeater row: the repeater's rows
+    const rowName = items.components().at(0).components().at(0);
+    const rel = traitEl(rowName);
+    expect(rel.querySelector('.gjss-trait__title')!.textContent).toBe('Items');
+    expect((rel.querySelector('input.gjss-input') as HTMLInputElement).value).toBe('One');
+    // the body: the whole form; it follows changes made elsewhere
+    const body = traitEl(editor.getWrapper());
+    expect(body.querySelector('.gjss-trait__title')!.textContent).toContain('Home');
+    expect(body.querySelectorAll('input.gjss-input').length).toBeGreaterThan(3);
+    (document.activeElement as HTMLElement)?.blur?.();
+    await api.setData('p1', { title: 'From elsewhere', items: [] });
+    await tick(5);
+    expect(el.querySelector<HTMLInputElement>('input.gjss-input')!.value).toBe('From elsewhere');
+    [el, rel, body].forEach((x) => x.remove());
+  });
+
   it('a data record shows its page’s template with its own data; + adds one under the page', async () => {
     const records: any[] = [
       { id: 'p1', name: 'News', kind: 'page', values: { 'storage.template': 'news' } },
@@ -640,7 +684,7 @@ describe('fields as elements (styled in GrapesJS)', () => {
     expect(html).toMatch(/<a data-storage-field="more"[^>]*target="_blank" rel="noopener" href="\/x">More<\/a>/);
     expect(html).toContain('href="mailto:a@b.c">a@b.c</a>');
     expect(a.getEl().tagName).toBe('A');
-    expect(mail.get('traits').length).toBe(0); // no tag choice: it is a link
+    expect(mail.get('traits').map((x: any) => x.get('name'))).toEqual(['storage-value']); // no tag choice: it is a link
     await api.setData('p1', { photo: null, more: null });
     await tick(5);
     expect(img.getEl().getAttribute('src')).toMatch(/^data:image\/svg\+xml/);

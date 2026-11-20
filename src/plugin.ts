@@ -2,6 +2,7 @@ import { definePlugin, registerControl, type PluginMeta } from './contract';
 import type { Editor } from 'grapesjs';
 import { FieldComponents } from './editor/FieldComponents';
 import { COMMANDS, EVENTS } from './events';
+import { registerSettings } from './editor/settings';
 import { createTranslator, getLocale, registerMessages } from './i18n';
 import { designOf, isPage, openDataModal, type PageRec, type PagesBridge, type PagesLike, recordFormSections, templateIdOf } from './integration/pages';
 import { type DataValues, localizeValues, normalizeFields, type SchemaField } from './schema';
@@ -363,6 +364,20 @@ function storagePlugin(editor: Editor, userOpts: StorageOptions = {}): void {
     if (tpl) await openDataModal(editor, bridge, rec, tpl);
   };
 
+  // Component settings: the selected field's value, on the body all of the page's data.
+  offs.push(
+    registerSettings(editor, fields, {
+      t,
+      current: () => (ctx ? { record: { id: ctx.record.id, name: ctx.record.name }, templateId: ctx.templateId, values: ctx.values } : null),
+      template: (id) => templateById(id),
+      formOptions: () => ({ html: opts.htmlEditor, language: getLocale(editor), languages: formLanguages(), ...formSources }),
+      save: (values) => scheduleData(values),
+      openAll: () => {
+        if (ctx) void openData(ctx.record).catch(onError);
+      },
+    }, () => opts.injectCss && injectCss())
+  );
+
   on('pages-manager:record-actions', (req: { record: PageRec; actions: any[] }) => {
     const rec = req?.record;
     if (!isPage(rec) || !Array.isArray(req.actions)) return;
@@ -599,7 +614,7 @@ function storagePlugin(editor: Editor, userOpts: StorageOptions = {}): void {
 
 export const PLUGIN_ID = 'grapesjs-storage';
 /** Version of this package (a test checks it against package.json). */
-export const VERSION = '1.2.1';
+export const VERSION = '1.3.0';
 
 /** Options for forms (plugin contract). `autosaveDelay` applies live. */
 export const META: PluginMeta = {
