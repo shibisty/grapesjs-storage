@@ -14,7 +14,8 @@ import { findHostPanel, findSidebarHost } from './ui/host';
 import type { AssetSource } from './ui/DataForm';
 import { Panel } from './ui/Panel';
 import { openTemplateEditor } from './ui/TemplateEditor';
-import { injectCss } from './ui/styles';
+import { injectCss, injectMediaCss } from './ui/styles';
+import { mediaSources, pickMedia } from './ui/media';
 import { fmt, report, uuid } from './utils';
 
 export const PANEL_BUTTON_ID = 'content-storage';
@@ -86,32 +87,14 @@ function storagePlugin(editor: Editor, userOpts: StorageOptions = {}): void {
       .filter((r) => !r.deleted && (r.kind || 'page') === 'page' && !r.templateId)
       .map((r) => ({ id: r.id, name: r.name, ...(r.slug ? { slug: r.slug } : {}) }));
   };
-  const isImage = (a: { type?: string; url: string }): boolean => a.type === 'image' || /\.(png|jpe?g|gif|webp|svg|avif|bmp)(\?|#|$)/i.test(a.url) || a.url.startsWith('data:image/');
+  // Media of image, file and gallery fields: the Asset Manager and, with grapesjs-cloud-assets, the cloud.
+  const mediaLabels = () => ({ assets: t('fromAssets'), cloud: t('fromCloud'), choose: t('pickChoose'), chooseN: t('pickChooseN'), cancel: t('cancel') });
   const assets: AssetSource = {
-    list: (kind) => {
-      const all = ((editor.AssetManager as any)?.getAll?.()?.models || []).map((m: any) => ({
-        url: String(m.getSrc?.() || m.get('src') || ''),
-        name: m.get('name') || undefined,
-        type: m.get('type'),
-      }));
-      return all.filter((a: any) => a.url && (kind === 'file' || isImage(a))).map(({ url, name }: any) => ({ url, ...(name ? { name } : {}) }));
+    sources: () => mediaSources(editor, mediaLabels()),
+    pick: (source, kind, multiple) => {
+      if (opts.injectCss) injectMediaCss();
+      return pickMedia(editor, source, { kind, multiple, labels: mediaLabels(), pfx: 'gjss', title: source === 'assets' ? t('fromAssets') : undefined });
     },
-    // A file from the computer: kept as an asset of the editor (a data URL unless the asset manager uploads).
-    add: (file) =>
-      new Promise((resolve, reject) => {
-        const r = new FileReader();
-        r.onload = () => {
-          const src = String(r.result || '');
-          try {
-            (editor.AssetManager as any)?.add?.({ src, name: file.name, type: file.type.startsWith('image/') ? 'image' : 'file' });
-          } catch {
-            /* the asset manager may refuse other types: the address still works */
-          }
-          resolve(src);
-        };
-        r.onerror = () => reject(r.error);
-        r.readAsDataURL(file);
-      }),
   };
   const formSources = { assets, pages: () => pageList };
 
@@ -549,7 +532,7 @@ function storagePlugin(editor: Editor, userOpts: StorageOptions = {}): void {
 
 export const PLUGIN_ID = 'grapesjs-storage';
 /** Version of this package (a test checks it against package.json). */
-export const VERSION = '1.0.0';
+export const VERSION = '1.1.0';
 
 /** Options for forms (plugin contract). `autosaveDelay` applies live. */
 export const META: PluginMeta = {

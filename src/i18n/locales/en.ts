@@ -108,7 +108,6 @@ const messages: StorageLabels = {
   multiple: 'Select multiple',
   newTab: 'Open in a new tab',
   no: 'No',
-  noAssets: 'No files in the asset manager yet.',
   noRows: 'No rows yet.',
   offText: 'Text when off',
   onText: 'Text when on',
@@ -130,11 +129,17 @@ const messages: StorageLabels = {
   rowsMin: 'Minimum rows',
   step: 'Step',
   subFields: 'Sub fields',
-  upload: 'Upload',
   url: 'Address',
   useUrl: 'Use',
   width: 'Width, %',
   yes: 'Yes',
+  fromAssets: 'Media library',
+  fromCloud: 'Cloud',
+  byUrl: 'URL',
+  tempLink: 'Temporary link: it stops working on %s. Choose a file of the site or a permanent address.',
+  pickChoose: 'Choose',
+  pickChooseN: 'Choose (%s)',
+  cancel: 'Cancel',
 };
 
 export default messages;

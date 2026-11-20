@@ -108,7 +108,6 @@ const messages: StorageLabels = {
   multiple: 'Chọn nhiều',
   newTab: 'Mở trong thẻ mới',
   no: 'Không',
-  noAssets: 'Chưa có tệp trong trình quản lý.',
   noRows: 'Chưa có hàng nào.',
   offText: 'Văn bản khi tắt',
   onText: 'Văn bản khi bật',
@@ -130,11 +129,17 @@ const messages: StorageLabels = {
   rowsMin: 'Số hàng tối thiểu',
   step: 'Bước',
   subFields: 'Trường con',
-  upload: 'Tải lên',
   url: 'Địa chỉ',
   useUrl: 'Dùng',
   width: 'Chiều rộng, %',
   yes: 'Có',
+  fromAssets: 'Thư viện media',
+  fromCloud: 'Đám mây',
+  byUrl: 'URL',
+  tempLink: 'Liên kết tạm thời: sẽ ngừng hoạt động vào %s. Hãy chọn tệp của trang hoặc địa chỉ cố định.',
+  pickChoose: 'Chọn',
+  pickChooseN: 'Chọn (%s)',
+  cancel: 'Hủy',
 };
 
 export default messages;

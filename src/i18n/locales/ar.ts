@@ -108,7 +108,6 @@ const messages: StorageLabels = {
   multiple: 'اختيار متعدد',
   newTab: 'الفتح في تبويب جديد',
   no: 'لا',
-  noAssets: 'لا توجد ملفات في مدير الملفات بعد.',
   noRows: 'لا توجد صفوف بعد.',
   offText: 'النص عند الإيقاف',
   onText: 'النص عند التشغيل',
@@ -130,11 +129,17 @@ const messages: StorageLabels = {
   rowsMin: 'أدنى عدد للصفوف',
   step: 'الخطوة',
   subFields: 'حقول فرعية',
-  upload: 'رفع',
   url: 'العنوان',
   useUrl: 'استخدام',
   width: 'العرض، %',
   yes: 'نعم',
+  fromAssets: 'مكتبة الوسائط',
+  fromCloud: 'السحابة',
+  byUrl: 'URL',
+  tempLink: 'رابط مؤقت: سيتوقف عن العمل في %s. اختر ملفًا من الموقع أو عنوانًا دائمًا.',
+  pickChoose: 'اختيار',
+  pickChooseN: 'اختيار (%s)',
+  cancel: 'إلغاء',
 };
 
 export default messages;

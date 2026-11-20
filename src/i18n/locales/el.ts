@@ -108,7 +108,6 @@ const messages: StorageLabels = {
   multiple: 'Πολλαπλή επιλογή',
   newTab: 'Άνοιγμα σε νέα καρτέλα',
   no: 'Όχι',
-  noAssets: 'Δεν υπάρχουν ακόμη αρχεία στη διαχείριση.',
   noRows: 'Δεν υπάρχουν ακόμη γραμμές.',
   offText: 'Κείμενο όταν είναι ανενεργό',
   onText: 'Κείμενο όταν είναι ενεργό',
@@ -130,11 +129,17 @@ const messages: StorageLabels = {
   rowsMin: 'Ελάχιστες γραμμές',
   step: 'Βήμα',
   subFields: 'Υποπεδία',
-  upload: 'Μεταφόρτωση',
   url: 'Διεύθυνση',
   useUrl: 'Χρήση',
   width: 'Πλάτος, %',
   yes: 'Ναι',
+  fromAssets: 'Βιβλιοθήκη πολυμέσων',
+  fromCloud: 'Cloud',
+  byUrl: 'URL',
+  tempLink: 'Προσωρινός σύνδεσμος: θα σταματήσει να λειτουργεί στις %s. Επιλέξτε αρχείο του ιστότοπου ή μόνιμη διεύθυνση.',
+  pickChoose: 'Επιλογή',
+  pickChooseN: 'Επιλογή (%s)',
+  cancel: 'Ακύρωση',
 };
 
 export default messages;

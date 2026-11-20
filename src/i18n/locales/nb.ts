@@ -108,7 +108,6 @@ const messages: StorageLabels = {
   multiple: 'Flervalg',
   newTab: 'Åpne i ny fane',
   no: 'Nei',
-  noAssets: 'Ingen filer i ressursbehandleren ennå.',
   noRows: 'Ingen rader ennå.',
   offText: 'Tekst når av',
   onText: 'Tekst når på',
@@ -130,11 +129,17 @@ const messages: StorageLabels = {
   rowsMin: 'Min rader',
   step: 'Steg',
   subFields: 'Underfelt',
-  upload: 'Last opp',
   url: 'Adresse',
   useUrl: 'Bruk',
   width: 'Bredde, %',
   yes: 'Ja',
+  fromAssets: 'Mediebibliotek',
+  fromCloud: 'Sky',
+  byUrl: 'URL',
+  tempLink: 'Midlertidig lenke: slutter å virke %s. Velg en fil fra nettstedet eller en fast adresse.',
+  pickChoose: 'Velg',
+  pickChooseN: 'Velg (%s)',
+  cancel: 'Avbryt',
 };
 
 export default messages;

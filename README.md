@@ -67,7 +67,11 @@ not saved.
 
 **The data form** has a control per type: lines, number fields, sliders, date, time and color
 pickers, Jodit, selects, checkboxes, radios, button groups, switches; images, files and galleries
-are picked from the editor's assets (or an address, or a file from the computer); a group is a
+are picked from the editor's **Asset Manager** (its list, uploads and "add by URL"), from the
+**cloud** when [grapesjs-cloud-assets](https://www.npmjs.com/package/grapesjs-cloud-assets) 0.11+ is
+on the page (Dropbox, Google Drive, OneDrive, Box, S3 — found by its `cloud-assets:pick` command), or
+typed as an address. Both pickers open above the open dialog, so its unsaved fields stay. A temporary
+cloud link (Dropbox, OneDrive, S3) is taken with a warning: it stops working after a while; a group is a
 box of its fields; a repeater is a list of rows — **+** adds one (with the defaults), each row can
 move, be copied, collapse and go; min / max rows are kept. Tabs, accordions and messages shape
 the form. Required fields, numbers, dates, e-mails, addresses, bounds and rows are checked before

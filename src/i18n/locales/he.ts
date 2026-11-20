@@ -108,7 +108,6 @@ const messages: StorageLabels = {
   multiple: 'בחירה מרובה',
   newTab: 'פתיחה בלשונית חדשה',
   no: 'לא',
-  noAssets: 'אין עדיין קבצים במנהל הקבצים.',
   noRows: 'אין עדיין שורות.',
   offText: 'טקסט כשכבוי',
   onText: 'טקסט כשפעיל',
@@ -130,11 +129,17 @@ const messages: StorageLabels = {
   rowsMin: 'מינימום שורות',
   step: 'צעד',
   subFields: 'שדות משנה',
-  upload: 'העלאה',
   url: 'כתובת',
   useUrl: 'שימוש',
   width: 'רוחב, %',
   yes: 'כן',
+  fromAssets: 'ספריית מדיה',
+  fromCloud: 'ענן',
+  byUrl: 'URL',
+  tempLink: 'קישור זמני: יפסיק לעבוד ב־%s. בחרו קובץ של האתר או כתובת קבועה.',
+  pickChoose: 'בחירה',
+  pickChooseN: 'בחירה (%s)',
+  cancel: 'ביטול',
 };
 
 export default messages;

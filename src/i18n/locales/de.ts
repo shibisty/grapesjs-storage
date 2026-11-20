@@ -108,7 +108,6 @@ const messages: StorageLabels = {
   multiple: 'Mehrfachauswahl',
   newTab: 'In neuem Tab öffnen',
   no: 'Nein',
-  noAssets: 'Noch keine Dateien in der Medienverwaltung.',
   noRows: 'Noch keine Einträge.',
   offText: 'Text für Aus',
   onText: 'Text für An',
@@ -130,11 +129,17 @@ const messages: StorageLabels = {
   rowsMin: 'Mindestens Einträge',
   step: 'Schrittweite',
   subFields: 'Unterfelder',
-  upload: 'Hochladen',
   url: 'Adresse',
   useUrl: 'Übernehmen',
   width: 'Breite, %',
   yes: 'Ja',
+  fromAssets: 'Mediathek',
+  fromCloud: 'Cloud',
+  byUrl: 'URL',
+  tempLink: 'Temporärer Link: funktioniert ab %s nicht mehr. Wählen Sie eine Datei der Website oder eine dauerhafte Adresse.',
+  pickChoose: 'Auswählen',
+  pickChooseN: 'Auswählen (%s)',
+  cancel: 'Abbrechen',
 };
 
 export default messages;

@@ -108,7 +108,6 @@ const messages: StorageLabels = {
   multiple: 'Selecció múltiple',
   newTab: 'Obre en una pestanya nova',
   no: 'No',
-  noAssets: 'Encara no hi ha fitxers al gestor.',
   noRows: 'Encara no hi ha files.',
   offText: 'Text desactivat',
   onText: 'Text activat',
@@ -130,11 +129,17 @@ const messages: StorageLabels = {
   rowsMin: 'Mínim de files',
   step: 'Pas',
   subFields: 'Subcamps',
-  upload: 'Puja',
   url: 'Adreça',
   useUrl: 'Fes servir',
   width: 'Amplada, %',
   yes: 'Sí',
+  fromAssets: 'Mediateca',
+  fromCloud: 'Núvol',
+  byUrl: 'URL',
+  tempLink: 'Enllaç temporal: deixarà de funcionar el %s. Tria un fitxer del lloc o una adreça permanent.',
+  pickChoose: 'Tria',
+  pickChooseN: 'Tria (%s)',
+  cancel: 'Cancel·la',
 };
 
 export default messages;

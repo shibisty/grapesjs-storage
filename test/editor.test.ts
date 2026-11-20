@@ -268,26 +268,51 @@ describe('data form', () => {
     expect(Object.keys(f.read())).toEqual(['has', 'what', 'note']);
   });
 
-  it('media from the asset list, links, pages; problems are marked', async () => {
+  it('media from the sources, links, pages; problems are marked', async () => {
+    const picks: any[] = [];
+    const queue: any[] = [[{ url: 'b.png' }], [{ url: 'a.png' }, { url: 'b.png' }], [{ url: 'https://dl.test/c.jpg', expiresAt: Date.now() + 3600e3 }]];
     const { f, el } = mount(
       [
         { name: 'img', type: 'image', required: true },
-        { name: 'pics', type: 'gallery' },
+        { name: 'pics', type: 'gallery', max: 3 },
         { name: 'go', type: 'link' },
         { name: 'p', type: 'page_link' },
       ],
       {},
       {
-        assets: { list: () => [{ url: 'a.png' }, { url: 'b.png' }] },
+        assets: {
+          sources: () => [
+            { id: 'assets', label: 'Media library' },
+            { id: 'cloud', label: 'Cloud' },
+          ],
+          pick: async (source: string, kind: string, multiple: boolean) => (picks.push({ source, kind, multiple }), queue.shift()),
+        },
         pages: () => [{ id: 'p1', name: 'Home', slug: '/' }],
       }
     );
     expect(f.problemText()).toBe('“img” is required');
     expect(el.querySelector('[data-field="img"]')!.classList.contains('has-problem')).toBe(true);
-    click(el.querySelector('[data-field="img"] [data-role="choose"]')!);
-    click(el.querySelectorAll('[data-field="img"] .gjss-asset')[1]);
-    click(el.querySelector('[data-field="pics"] [data-role="add-image"]')!);
-    el.querySelectorAll<HTMLElement>('[data-field="pics"] .gjss-asset').forEach((b) => click(b));
+    click(el.querySelector('[data-field="img"] [data-role="pick-assets"]')!);
+    await tick();
+    expect(el.querySelector<HTMLImageElement>('[data-field="img"] img.gjss-thumb')!.getAttribute('src')).toBe('b.png');
+    click(el.querySelector('[data-field="pics"] [data-role="pick-assets"]')!);
+    await tick();
+    // the third one is a temporary link of the cloud: taken, with a warning
+    click(el.querySelector('[data-field="pics"] [data-role="pick-cloud"]')!);
+    await tick();
+    expect(picks).toEqual([
+      { source: 'assets', kind: 'image', multiple: false },
+      { source: 'assets', kind: 'image', multiple: true },
+      { source: 'cloud', kind: 'image', multiple: true },
+    ]);
+    expect(el.querySelector('[data-field="pics"] .gjss-warn')!.textContent).toMatch(/^Temporary link/);
+    // max 3: the sources are off
+    expect(el.querySelector<HTMLButtonElement>('[data-field="pics"] [data-role="pick-assets"]')!.disabled).toBe(true);
+    // an address typed by hand
+    click(el.querySelector('[data-field="img"] [data-role="by-url"]')!);
+    const typed = el.querySelector<HTMLInputElement>('[data-field="img"] .gjss-url-row input')!;
+    typed.value = '/img/x.png';
+    click(el.querySelector('[data-field="img"] [data-role="use-url"]')!);
     const url = el.querySelector<HTMLInputElement>('input[name="go.url"]')!;
     url.value = '/contact';
     url.dispatchEvent(new Event('input'));
@@ -296,8 +321,61 @@ describe('data form', () => {
     expect([...p.options].map((o) => o.textContent)).toEqual(['—', 'Home — /']);
     p.value = 'p1';
     p.dispatchEvent(new Event('change'));
-    expect(f.read()).toEqual({ img: { url: 'b.png' }, pics: [{ url: 'a.png' }, { url: 'b.png' }], go: { url: '/contact', target: '_blank' }, p: 'p1' });
+    expect(f.read()).toEqual({
+      img: { url: '/img/x.png' },
+      pics: [{ url: 'a.png' }, { url: 'b.png' }, { url: 'https://dl.test/c.jpg' }],
+      go: { url: '/contact', target: '_blank' },
+      p: 'p1',
+    });
     expect(f.problemText()).toBe('');
+  });
+});
+
+describe('media sources in the editor', () => {
+  it('the Asset Manager opens in an overlay above the open dialog; a double click takes the asset', async () => {
+    s = await createEditor();
+    const { editor } = s;
+    editor.AssetManager.add([{ src: 'https://x.test/a.png' }, { src: 'https://x.test/b.jpg' }, { src: 'https://x.test/doc.pdf', type: 'image' } as any]);
+    // another dialog is open: it must stay
+    editor.Modal.open({ title: 'Data', content: '<div id="mine">mine</div>' });
+    const { pickMedia } = await import('../src/ui/media');
+    const labels = { assets: 'Media library', cloud: 'Cloud', choose: 'Choose', chooseN: 'Choose (%s)', cancel: 'Cancel' };
+    const p = pickMedia(editor, 'assets', { kind: 'image', labels, pfx: 'gjss' });
+    const ov = document.querySelector<HTMLElement>('.gjss-ov')!;
+    expect(ov).not.toBeNull();
+    const shown = [...ov.querySelectorAll<HTMLElement>('.gjs-am-asset')];
+    expect(shown.length).toBe(3);
+    shown[1].querySelector<HTMLElement>('.gjs-am-preview-cont')!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    expect(await p).toEqual([{ url: 'https://x.test/b.jpg', provider: 'assets' }]);
+    expect(document.querySelector('.gjss-ov')).toBeNull();
+    expect(editor.Modal.isOpen()).toBe(true);
+    expect(document.getElementById('mine')).not.toBeNull();
+    // several: clicks mark, the button takes them
+    const p2 = pickMedia(editor, 'assets', { kind: 'image', multiple: true, labels, pfx: 'gjss' });
+    const ov2 = document.querySelector<HTMLElement>('.gjss-ov')!;
+    const items = [...ov2.querySelectorAll<HTMLElement>('.gjs-am-asset .gjs-am-preview-cont')];
+    items[0].dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    items[2].dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    const ok = ov2.querySelector<HTMLButtonElement>('[data-role="pick-ok"]')!;
+    expect(ok.textContent).toBe('Choose (2)');
+    click(ok);
+    expect((await p2)!.map((x) => x.url)).toEqual(['https://x.test/a.png', 'https://x.test/doc.pdf']);
+    // Escape closes with nothing
+    const p3 = pickMedia(editor, 'assets', { kind: 'file', labels, pfx: 'gjss' });
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(await p3).toBeNull();
+  });
+
+  it('with grapesjs-cloud-assets the cloud is a source; its temporary links are reported', async () => {
+    s = await createEditor({
+      before: (ed) => {
+        ed.Commands.add('cloud-assets:pick', { run: async (_e: any, _s: any, o: any) => (o.type === 'image' && o.overlay ? [{ src: 'https://dl.test/x.jpg', name: 'x.jpg', expiresAt: 5, provider: 'dropbox' }] : null) });
+      },
+    });
+    const { mediaSources, pickMedia } = await import('../src/ui/media');
+    expect(mediaSources(s.editor, { assets: 'A', cloud: 'C' }).map((x) => x.id)).toEqual(['assets', 'cloud']);
+    const got = await pickMedia(s.editor, 'cloud', { kind: 'image', labels: {} as any, pfx: 'gjss' });
+    expect(got).toEqual([{ url: 'https://dl.test/x.jpg', name: 'x.jpg', expiresAt: 5, provider: 'dropbox' }]);
   });
 });
 

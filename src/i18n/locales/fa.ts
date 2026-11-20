@@ -108,7 +108,6 @@ const messages: StorageLabels = {
   multiple: 'انتخاب چندگانه',
   newTab: 'باز شدن در زبانه جدید',
   no: 'خیر',
-  noAssets: 'هنوز پرونده‌ای در مدیر پرونده نیست.',
   noRows: 'هنوز ردیفی نیست.',
   offText: 'متن حالت خاموش',
   onText: 'متن حالت روشن',
@@ -130,11 +129,17 @@ const messages: StorageLabels = {
   rowsMin: 'کمترین ردیف',
   step: 'گام',
   subFields: 'فیلدهای زیرین',
-  upload: 'بارگذاری',
   url: 'نشانی',
   useUrl: 'استفاده',
   width: 'پهنا، %',
   yes: 'بله',
+  fromAssets: 'کتابخانه رسانه',
+  fromCloud: 'ابر',
+  byUrl: 'URL',
+  tempLink: 'پیوند موقت: در %s از کار می‌افتد. یک فایل سایت یا یک نشانی دائمی انتخاب کنید.',
+  pickChoose: 'انتخاب',
+  pickChooseN: 'انتخاب (%s)',
+  cancel: 'لغو',
 };
 
 export default messages;

@@ -108,7 +108,6 @@ const messages: StorageLabels = {
   multiple: 'Pilih banyak',
   newTab: 'Buka di tab baru',
   no: 'Tidak',
-  noAssets: 'Belum ada berkas di pengelola aset.',
   noRows: 'Belum ada baris.',
   offText: 'Teks saat mati',
   onText: 'Teks saat hidup',
@@ -130,11 +129,17 @@ const messages: StorageLabels = {
   rowsMin: 'Baris minimum',
   step: 'Langkah',
   subFields: 'Sub-bidang',
-  upload: 'Unggah',
   url: 'Alamat',
   useUrl: 'Pakai',
   width: 'Lebar, %',
   yes: 'Ya',
+  fromAssets: 'Pustaka media',
+  fromCloud: 'Cloud',
+  byUrl: 'URL',
+  tempLink: 'Tautan sementara: berhenti berfungsi pada %s. Pilih berkas situs atau alamat permanen.',
+  pickChoose: 'Pilih',
+  pickChooseN: 'Pilih (%s)',
+  cancel: 'Batal',
 };
 
 export default messages;

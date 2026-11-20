@@ -108,7 +108,6 @@ const messages: StorageLabels = {
   multiple: 'Çoklu seçim',
   newTab: 'Yeni sekmede aç',
   no: 'Hayır',
-  noAssets: 'Varlık yöneticisinde henüz dosya yok.',
   noRows: 'Henüz satır yok.',
   offText: 'Kapalıyken metin',
   onText: 'Açıkken metin',
@@ -130,11 +129,17 @@ const messages: StorageLabels = {
   rowsMin: 'En az satır',
   step: 'Adım',
   subFields: 'Alt alanlar',
-  upload: 'Yükle',
   url: 'Adres',
   useUrl: 'Kullan',
   width: 'Genişlik, %',
   yes: 'Evet',
+  fromAssets: 'Medya kitaplığı',
+  fromCloud: 'Bulut',
+  byUrl: 'URL',
+  tempLink: 'Geçici bağlantı: %s tarihinde çalışmayı bırakır. Sitenin bir dosyasını veya kalıcı bir adres seçin.',
+  pickChoose: 'Seç',
+  pickChooseN: 'Seç (%s)',
+  cancel: 'İptal',
 };
 
 export default messages;

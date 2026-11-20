@@ -108,7 +108,6 @@ const messages: StorageLabels = {
   multiple: '여러 개 선택',
   newTab: '새 탭에서 열기',
   no: '아니요',
-  noAssets: '아직 에셋 관리자에 파일이 없습니다.',
   noRows: '아직 행이 없습니다.',
   offText: '꺼짐 텍스트',
   onText: '켜짐 텍스트',
@@ -130,11 +129,17 @@ const messages: StorageLabels = {
   rowsMin: '최소 행',
   step: '간격',
   subFields: '하위 필드',
-  upload: '업로드',
   url: '주소',
   useUrl: '사용',
   width: '너비, %',
   yes: '예',
+  fromAssets: '미디어 라이브러리',
+  fromCloud: '클라우드',
+  byUrl: 'URL',
+  tempLink: '임시 링크: %s에 만료됩니다. 사이트의 파일이나 영구 주소를 선택하세요.',
+  pickChoose: '선택',
+  pickChooseN: '선택 (%s)',
+  cancel: '취소',
 };
 
 export default messages;

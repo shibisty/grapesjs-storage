@@ -108,7 +108,6 @@ const messages: StorageLabels = {
   multiple: '多选',
   newTab: '在新标签页打开',
   no: '否',
-  noAssets: '资源管理器中还没有文件。',
   noRows: '还没有行。',
   offText: '关闭时文字',
   onText: '开启时文字',
@@ -130,11 +129,17 @@ const messages: StorageLabels = {
   rowsMin: '最少行数',
   step: '步长',
   subFields: '子字段',
-  upload: '上传',
   url: '地址',
   useUrl: '使用',
   width: '宽度，%',
   yes: '是',
+  fromAssets: '媒体库',
+  fromCloud: '云端',
+  byUrl: 'URL',
+  tempLink: '临时链接：将于 %s 失效。请选择网站中的文件或永久地址。',
+  pickChoose: '选择',
+  pickChooseN: '选择 (%s)',
+  cancel: '取消',
 };
 
 export default messages;

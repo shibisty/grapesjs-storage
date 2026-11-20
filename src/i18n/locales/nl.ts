@@ -108,7 +108,6 @@ const messages: StorageLabels = {
   multiple: 'Meerdere waarden',
   newTab: 'Openen in nieuw tabblad',
   no: 'Nee',
-  noAssets: 'Nog geen bestanden in de mediabeheerder.',
   noRows: 'Nog geen rijen.',
   offText: 'Tekst bij uit',
   onText: 'Tekst bij aan',
@@ -130,11 +129,17 @@ const messages: StorageLabels = {
   rowsMin: 'Minimaal aantal rijen',
   step: 'Stap',
   subFields: 'Subvelden',
-  upload: 'Uploaden',
   url: 'Adres',
   useUrl: 'Gebruiken',
   width: 'Breedte, %',
   yes: 'Ja',
+  fromAssets: 'Mediabibliotheek',
+  fromCloud: 'Cloud',
+  byUrl: 'URL',
+  tempLink: 'Tijdelijke link: werkt niet meer na %s. Kies een bestand van de site of een vast adres.',
+  pickChoose: 'Kiezen',
+  pickChooseN: 'Kiezen (%s)',
+  cancel: 'Annuleren',
 };
 
 export default messages;

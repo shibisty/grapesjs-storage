@@ -108,7 +108,6 @@ const messages: StorageLabels = {
   multiple: 'Несколько значений',
   newTab: 'Открывать в новой вкладке',
   no: 'Нет',
-  noAssets: 'В менеджере файлов пока ничего нет.',
   noRows: 'Строк пока нет.',
   offText: 'Текст «выкл»',
   onText: 'Текст «вкл»',
@@ -130,11 +129,17 @@ const messages: StorageLabels = {
   rowsMin: 'Минимум строк',
   step: 'Шаг',
   subFields: 'Вложенные поля',
-  upload: 'Загрузить',
   url: 'Адрес',
   useUrl: 'Вставить',
   width: 'Ширина, %',
   yes: 'Да',
+  fromAssets: 'Медиатека',
+  fromCloud: 'Облако',
+  byUrl: 'URL',
+  tempLink: 'Временная ссылка: перестанет работать %s. Выберите файл сайта или постоянный адрес.',
+  pickChoose: 'Выбрать',
+  pickChooseN: 'Выбрать (%s)',
+  cancel: 'Отмена',
 };
 
 export default messages;

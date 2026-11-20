@@ -16,12 +16,15 @@ import {
 import { fmt } from '../utils';
 import { h } from './dom';
 import { attachHtmlEditor, type HtmlEditorOptions } from './jodit';
+import type { MediaSource, PickedMedia } from './media';
 
-/** Where image and file fields pick from: the editor's assets. */
+/**
+ * Where image, file and gallery fields pick from: the editor's Asset
+ * Manager and, with grapesjs-cloud-assets, the cloud (see `media.ts`).
+ */
 export interface AssetSource {
-  list(kind: 'image' | 'file'): Array<{ url: string; name?: string }>;
-  /** Adds a file from the computer; resolves to its address. */
-  add?(file: File): Promise<string>;
+  sources(): MediaSource[];
+  pick(source: MediaSource['id'], kind: 'image' | 'file', multiple: boolean): Promise<PickedMedia[] | null>;
 }
 
 export interface DataFormOptions {
@@ -144,61 +147,66 @@ export function dataForm(o: DataFormOptions): DataForm {
     return el;
   };
 
-  /** A small chooser under a media field: the editor's assets, an address, a file from the computer. */
-  const picker = (kind: 'image' | 'file', onPick: (v: { url: string; name?: string }) => void, multi = false): HTMLElement => {
-    const box = h('div', { class: 'gjss-picker', hidden: true });
-    const draw = (): void => {
-      const list = o.assets?.list(kind) || [];
-      const url = h('input', { class: 'gjss-input', type: 'url', placeholder: 'https://…', 'aria-label': t('url') }) as HTMLInputElement;
-      const use = () => {
-        if (!url.value.trim()) return;
-        onPick({ url: url.value.trim() });
-        if (!multi) box.hidden = true;
-      };
-      url.addEventListener('keydown', (e) => (e as KeyboardEvent).key === 'Enter' && (e.preventDefault(), use()));
-      const upload = o.assets?.add
-        ? (() => {
-            const file = h('input', { type: 'file', accept: kind === 'image' ? 'image/*' : null, hidden: true }) as HTMLInputElement;
-            file.addEventListener('change', async () => {
-              const f = file.files?.[0];
-              if (!f) return;
-              const u = await o.assets!.add!(f);
-              onPick({ url: u, name: f.name });
-              draw();
-              if (!multi) box.hidden = true;
-            });
-            return h('label', { class: 'gjss-secondary gjss-upload' }, t('upload'), file);
-          })()
-        : null;
-      box.replaceChildren(
-        list.length
-          ? h(
-              'div',
-              { class: `gjss-assets is-${kind}` },
-              ...list.map((a) =>
-                h(
-                  'button',
-                  {
-                    type: 'button',
-                    class: 'gjss-asset',
-                    title: a.name || a.url,
-                    onclick: () => {
-                      onPick(a);
-                      if (!multi) box.hidden = true;
-                    },
-                  },
-                  kind === 'image' ? h('img', { src: a.url, alt: '' }) : h('span', {}, a.name || a.url.split('/').pop() || a.url)
-                )
-              )
-            )
-          : h('p', { class: 'gjss-hint' }, t('noAssets')),
-        h('div', { class: 'gjss-row' }, url, h('button', { type: 'button', class: 'gjss-secondary', onclick: use }, t('useUrl')), upload)
-      );
+  /**
+   * The buttons of a media field: one per source (the Asset Manager, the
+   * cloud) and "URL" for an address typed by hand. A temporary link (the
+   * cloud's Dropbox, OneDrive, S3) is taken with a warning under the field.
+   */
+  const warns = new Map<string, string>();
+  const chooser = (key: string, kind: 'image' | 'file', label: string, onPick: (list: PickedMedia[]) => void, multi = false, disabled = false): HTMLElement => {
+    const box = h('div', { class: 'gjss-chooser' });
+    const urlRow = h('div', { class: 'gjss-row gjss-url-row', hidden: true });
+    const url = h('input', { class: 'gjss-input', type: 'url', placeholder: 'https://…', 'aria-label': t('url') }) as HTMLInputElement;
+    const take = (list: PickedMedia[] | null): void => {
+      if (!list?.length) return;
+      const temp = list.find((x) => x.expiresAt);
+      if (temp) warns.set(key, fmt(t('tempLink'), new Date(temp.expiresAt!).toLocaleString(o.language || undefined)));
+      else warns.delete(key);
+      onPick(list);
     };
-    (box as any).toggle = () => {
-      box.hidden = !box.hidden;
-      if (!box.hidden) draw();
+    const use = (): void => {
+      if (!url.value.trim()) return;
+      take([{ url: url.value.trim() }]);
     };
+    url.addEventListener('keydown', (e) => (e as KeyboardEvent).key === 'Enter' && (e.preventDefault(), use()));
+    urlRow.append(url, h('button', { type: 'button', class: 'gjss-secondary', 'data-role': 'use-url', onclick: use }, t('useUrl')));
+    const sources = o.assets?.sources() || [];
+    box.append(
+      h(
+        'div',
+        { class: 'gjss-row gjss-sources' },
+        h('span', { class: 'gjss-chooser-label' }, label),
+        ...sources.map((src) =>
+          h(
+            'button',
+            {
+              type: 'button',
+              class: 'gjss-secondary',
+              'data-role': `pick-${src.id}`,
+              disabled,
+              onclick: () => void o.assets!.pick(src.id, kind, multi).then(take, (e) => console.error('[grapesjs-storage]', e)),
+            },
+            src.id === 'cloud' ? `☁ ${src.label}` : src.label
+          )
+        ),
+        h(
+          'button',
+          {
+            type: 'button',
+            class: 'gjss-secondary',
+            'data-role': 'by-url',
+            disabled,
+            onclick: () => {
+              urlRow.hidden = !urlRow.hidden;
+              if (!urlRow.hidden) url.focus();
+            },
+          },
+          t('byUrl')
+        )
+      ),
+      urlRow,
+      warns.has(key) ? h('p', { class: 'gjss-warn', role: 'note' }, warns.get(key)!) : ''
+    );
     return box;
   };
 
@@ -206,7 +214,7 @@ export function dataForm(o: DataFormOptions): DataForm {
     const wrap = h('div', { id, class: 'gjss-media' });
     const draw = (): void => {
       const v = obj[f.name] as ImageValue | undefined;
-      const pick = picker('image', (a) => {
+      const pick = chooser(id, 'image', v?.url ? t('replace') : t('chooseImage'), ([a]) => {
         obj[f.name] = { url: a.url, ...(v?.alt ? { alt: v.alt } : {}) };
         changed();
         draw();
@@ -219,16 +227,10 @@ export function dataForm(o: DataFormOptions): DataForm {
       });
       wrap.replaceChildren(
         v?.url ? h('img', { class: 'gjss-thumb', src: v.url, alt: '' }) : '',
-        h(
-          'div',
-          { class: 'gjss-row' },
-          h('button', { type: 'button', class: 'gjss-secondary', 'data-role': 'choose', onclick: () => (pick as any).toggle() }, v?.url ? t('replace') : t('chooseImage')),
-          v?.url
-            ? h('button', { type: 'button', class: 'gjss-secondary', 'data-role': 'clear', onclick: () => ((obj[f.name] = null), changed(), draw()) }, t('remove'))
-            : null
-        ),
-        v?.url ? alt : '',
-        pick
+        pick,
+        v?.url
+          ? h('div', { class: 'gjss-row' }, alt, h('button', { type: 'button', class: 'gjss-secondary', 'data-role': 'clear', onclick: () => ((obj[f.name] = null), warns.delete(id), changed(), draw()) }, t('remove')))
+          : ''
       );
     };
     draw();
@@ -239,19 +241,20 @@ export function dataForm(o: DataFormOptions): DataForm {
     const wrap = h('div', { id, class: 'gjss-media' });
     const draw = (): void => {
       const v = obj[f.name] as FileValue | undefined;
-      const pick = picker('file', (a) => {
+      const pick = chooser(id, 'file', v?.url ? t('replace') : t('chooseFile'), ([a]) => {
         obj[f.name] = { url: a.url, ...(a.name ? { name: a.name } : {}) };
         changed();
         draw();
       });
       wrap.replaceChildren(
-        v?.url ? h('a', { class: 'gjss-file', href: v.url, target: '_blank', rel: 'noopener' }, v.name || v.url.split('/').pop() || v.url) : '',
-        h(
-          'div',
-          { class: 'gjss-row' },
-          h('button', { type: 'button', class: 'gjss-secondary', 'data-role': 'choose', onclick: () => (pick as any).toggle() }, v?.url ? t('replace') : t('chooseFile')),
-          v?.url ? h('button', { type: 'button', class: 'gjss-secondary', onclick: () => ((obj[f.name] = null), changed(), draw()) }, t('remove')) : null
-        ),
+        v?.url
+          ? h(
+              'div',
+              { class: 'gjss-row' },
+              h('a', { class: 'gjss-file', href: v.url, target: '_blank', rel: 'noopener' }, v.name || v.url.split('/').pop() || v.url),
+              h('button', { type: 'button', class: 'gjss-secondary', 'data-role': 'clear', onclick: () => ((obj[f.name] = null), warns.delete(id), changed(), draw()) }, t('remove'))
+            )
+          : '',
         pick
       );
     };
@@ -264,14 +267,19 @@ export function dataForm(o: DataFormOptions): DataForm {
     const list = (): ImageValue[] => (Array.isArray(obj[f.name]) ? (obj[f.name] as ImageValue[]) : ((obj[f.name] = []) as ImageValue[]));
     const draw = (): void => {
       const items = list();
-      const pick = picker(
+      const full = !!f.max && items.length >= f.max;
+      const pick = chooser(
+        id,
         'image',
-        (a) => {
-          list().push({ url: a.url });
+        `+ ${t('addImage')}`,
+        (got) => {
+          const room = f.max ? Math.max(0, f.max - list().length) : got.length;
+          got.slice(0, room).forEach((a) => list().push({ url: a.url }));
           changed();
           draw();
         },
-        true
+        true,
+        full
       );
       const move = (i: number, d: number) => {
         const j = i + d;
@@ -280,7 +288,6 @@ export function dataForm(o: DataFormOptions): DataForm {
         changed();
         draw();
       };
-      const full = !!f.max && items.length >= f.max;
       wrap.replaceChildren(
         h(
           'div',
@@ -300,7 +307,6 @@ export function dataForm(o: DataFormOptions): DataForm {
             )
           )
         ),
-        h('button', { type: 'button', class: 'gjss-secondary', 'data-role': 'add-image', disabled: full, onclick: () => (pick as any).toggle() }, `+ ${t('addImage')}`),
         pick
       );
     };

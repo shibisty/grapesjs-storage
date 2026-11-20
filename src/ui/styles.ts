@@ -1,3 +1,4 @@
+import { mediaCss } from './media';
 export const STYLE_ID = 'gjss-style';
 
 export const CSS = `
@@ -109,6 +110,12 @@ export const CSS = `
 .gjss-repeater>.gjss-secondary{align-self:flex-start}
 .gjss-media{display:flex;flex-direction:column;gap:4px;margin:3px 0 4px}
 .gjss-media .gjss-row{gap:6px}
+.gjss-sources{flex-wrap:wrap}
+.gjss-chooser-label{font-size:11px;opacity:.75;margin-inline-end:2px}
+.gjss-url-row[hidden]{display:none}
+.gjss-url-row{margin-top:4px}
+.gjss-url-row .gjss-input{margin:0}
+.gjss-sources .gjss-secondary[disabled]{opacity:.45;cursor:default}
 .gjss-thumb{max-width:100%;max-height:140px;object-fit:contain;align-self:flex-start;border-radius:3px;background:rgba(255,255,255,.06)}
 .gjss-file{word-break:break-all;color:inherit}
 .gjss-gallery-items{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:6px}
@@ -116,16 +123,6 @@ export const CSS = `
 .gjss-gallery-item img{display:block;width:100%;height:72px;object-fit:cover}
 .gjss-gallery-acts{display:flex;justify-content:center;background:rgba(0,0,0,.45)}
 .gjss-gallery-acts .gjss-act{padding:1px 4px}
-.gjss-picker{border:1px solid rgba(255,255,255,.18);border-radius:4px;padding:6px;background:rgba(0,0,0,.18)}
-.gjss-picker[hidden]{display:none}
-.gjss-assets{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:5px;max-height:180px;overflow:auto;margin-bottom:6px}
-.gjss-assets.is-file{grid-template-columns:1fr}
-.gjss-asset{border:1px solid transparent;background:rgba(255,255,255,.06);border-radius:3px;padding:0;cursor:pointer;color:inherit;font:inherit;text-align:start;overflow:hidden}
-.gjss-asset:hover,.gjss-asset:focus-visible{border-color:var(--gjs-quaternary-color,#d278c9);outline:none}
-.gjss-asset img{display:block;width:100%;height:56px;object-fit:cover}
-.gjss-asset span{display:block;padding:4px 6px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.gjss-upload{position:relative;display:inline-flex;align-items:center;white-space:nowrap;padding:6px 10px}
-.gjss-picker .gjss-row .gjss-input{margin:0}
 .gjss-link{display:flex;flex-direction:column}
 .gjss-link .gjss-check{font-size:12px}
 .gjss-message p{margin:2px 0 6px;opacity:.85;white-space:pre-wrap}
@@ -159,10 +156,13 @@ export const CSS = `
 .gjss-te-sub>.gjss-section{padding:0 0 4px}
 `;
 
+/** The Asset Manager overlay comes with the plugin's CSS. */
+export const injectMediaCss = (doc: Document = document): void => injectCss(doc);
+
 export function injectCss(doc: Document = document): void {
   if (doc.getElementById(STYLE_ID)) return;
   const s = doc.createElement('style');
   s.id = STYLE_ID;
-  s.textContent = CSS;
+  s.textContent = CSS + mediaCss('gjss');
   doc.head.appendChild(s);
 }

@@ -116,7 +116,6 @@ export interface StorageLabels {
   multiple: string;
   newTab: string;
   no: string;
-  noAssets: string;
   noRows: string;
   offText: string;
   onText: string;
@@ -138,9 +137,18 @@ export interface StorageLabels {
   rowsMin: string;
   step: string;
   subFields: string;
-  upload: string;
   url: string;
   useUrl: string;
   width: string;
   yes: string;
+  /** Media field sources */
+  fromAssets: string;
+  fromCloud: string;
+  byUrl: string;
+  /** %s — date and time */
+  tempLink: string;
+  pickChoose: string;
+  /** %s — count */
+  pickChooseN: string;
+  cancel: string;
 }

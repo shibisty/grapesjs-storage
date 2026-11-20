@@ -108,7 +108,6 @@ const messages: StorageLabels = {
   multiple: 'Višestruki izbor',
   newTab: 'Otvori u novoj kartici',
   no: 'Ne',
-  noAssets: 'Još nema datoteka u upravitelju.',
   noRows: 'Još nema redova.',
   offText: 'Tekst kad je isključeno',
   onText: 'Tekst kad je uključeno',
@@ -130,11 +129,17 @@ const messages: StorageLabels = {
   rowsMin: 'Najmanje redova',
   step: 'Korak',
   subFields: 'Podpolja',
-  upload: 'Otpremi',
   url: 'Adresa',
   useUrl: 'Koristi',
   width: 'Širina, %',
   yes: 'Da',
+  fromAssets: 'Medijska biblioteka',
+  fromCloud: 'Oblak',
+  byUrl: 'URL',
+  tempLink: 'Privremeni link: prestaje raditi %s. Odaberite datoteku stranice ili trajnu adresu.',
+  pickChoose: 'Odaberi',
+  pickChooseN: 'Odaberi (%s)',
+  cancel: 'Otkaži',
 };
 
 export default messages;

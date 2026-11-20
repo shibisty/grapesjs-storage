@@ -108,7 +108,6 @@ const messages: StorageLabels = {
   multiple: 'Кілька значень',
   newTab: 'Відкривати в новій вкладці',
   no: 'Ні',
-  noAssets: 'У менеджері файлів поки нічого немає.',
   noRows: 'Рядків поки немає.',
   offText: 'Текст «вимк»',
   onText: 'Текст «увімк»',
@@ -130,11 +129,17 @@ const messages: StorageLabels = {
   rowsMin: 'Мінімум рядків',
   step: 'Крок',
   subFields: 'Вкладені поля',
-  upload: 'Завантажити',
   url: 'Адреса',
   useUrl: 'Вставити',
   width: 'Ширина, %',
   yes: 'Так',
+  fromAssets: 'Медіатека',
+  fromCloud: 'Хмара',
+  byUrl: 'URL',
+  tempLink: 'Тимчасове посилання: перестане працювати %s. Виберіть файл сайту або постійну адресу.',
+  pickChoose: 'Вибрати',
+  pickChooseN: 'Вибрати (%s)',
+  cancel: 'Скасувати',
 };
 
 export default messages;

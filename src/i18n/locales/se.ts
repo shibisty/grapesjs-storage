@@ -108,7 +108,6 @@ const messages: StorageLabels = {
   multiple: 'Flerval',
   newTab: 'Öppna i ny flik',
   no: 'Nej',
-  noAssets: 'Inga filer i mediehanteraren än.',
   noRows: 'Inga rader än.',
   offText: 'Text när av',
   onText: 'Text när på',
@@ -130,11 +129,17 @@ const messages: StorageLabels = {
   rowsMin: 'Minst antal rader',
   step: 'Steg',
   subFields: 'Underfält',
-  upload: 'Ladda upp',
   url: 'Adress',
   useUrl: 'Använd',
   width: 'Bredd, %',
   yes: 'Ja',
+  fromAssets: 'Mediebibliotek',
+  fromCloud: 'Moln',
+  byUrl: 'URL',
+  tempLink: 'Tillfällig länk: slutar fungera %s. Välj en fil från webbplatsen eller en permanent adress.',
+  pickChoose: 'Välj',
+  pickChooseN: 'Välj (%s)',
+  cancel: 'Avbryt',
 };
 
 export default messages;
