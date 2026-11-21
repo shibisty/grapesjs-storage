@@ -130,13 +130,39 @@ function storagePlugin(editor: Editor, userOpts: StorageOptions = {}): void {
     if (!fromForm) panel?.setLang(code);
     emit(EVENTS.languages, { settings: languages, current: code });
   };
+  /**
+   * grapesjs-site-pages 2.16+ keeps the site's languages (with the address
+   * prefixes and the pages' translations): then they are read and changed
+   * there, and the store's `/languages` follows for servers that read it.
+   */
+  const pagesLanguages = (): { get(): Promise<unknown>; set(l: LanguageSettings | null): Promise<void> } | null => {
+    const pm = (editor as any).PagesManager;
+    return pm && pm.languages && typeof pm.languages.get === 'function' ? pm.languages : null;
+  };
+  const syncStore = (l: LanguageSettings | null): void => {
+    if (!store.saveLanguages) return;
+    void Promise.resolve(store.getLanguages?.())
+      .catch(() => null)
+      .then((cur) => (JSON.stringify(normalizeLanguages(cur)) === JSON.stringify(l) ? null : store.saveLanguages!(l)))
+      .catch(report);
+  };
   const loadLanguages = async (): Promise<void> => {
-    languages = normalizeLanguages(await store.getLanguages?.().catch(report));
+    const pages = pagesLanguages();
+    if (pages) {
+      languages = normalizeLanguages(await pages.get().catch(report));
+      if (languages) syncStore(languages);
+    } else languages = normalizeLanguages(await store.getLanguages?.().catch(report));
     memo = null;
   };
   const saveLanguages = async (next: LanguageSettings | null): Promise<LanguageSettings | null> => {
     const clean = normalizeLanguages(next);
-    const saved = store.saveLanguages ? await store.saveLanguages(clean) : clean;
+    const pages = pagesLanguages();
+    let saved: unknown;
+    if (pages) {
+      await pages.set(clean);
+      saved = clean;
+      syncStore(clean);
+    } else saved = store.saveLanguages ? await store.saveLanguages(clean) : clean;
     languages = normalizeLanguages(saved);
     memo = null;
     if (disposed) return languages;
@@ -399,6 +425,18 @@ function storagePlugin(editor: Editor, userOpts: StorageOptions = {}): void {
     const p = pm();
     if (p && req && Array.isArray(req.sections)) recordFormSections(editor, p, bridge, req);
   });
+  // The site's languages changed in grapesjs-site-pages (its site settings).
+  on('pages-manager:languages', (e: { languages?: unknown }) => {
+    const next = normalizeLanguages(e?.languages);
+    if (JSON.stringify(next) === JSON.stringify(languages)) return;
+    languages = next;
+    memo = null;
+    // currentLang() falls back to the default when the shown language is gone.
+    syncStore(languages);
+    fields.refresh();
+    panel?.render();
+    emit(EVENTS.languages, { settings: languages, current: currentLang() });
+  });
   on('pages-manager:open', (rec: PageRec) => void readPages().then(() => syncPage(rec)).catch(report));
   // grapesjs-pages renders a record for its board (opened silently): its data first.
   // `placeholders`: the board shows templates — every field as its placeholder, no content;
@@ -625,7 +663,7 @@ function storagePlugin(editor: Editor, userOpts: StorageOptions = {}): void {
 
 export const PLUGIN_ID = 'grapesjs-storage';
 /** Version of this package (a test checks it against package.json). */
-export const VERSION = '1.5.0';
+export const VERSION = '1.6.0';
 
 /** Options for forms (plugin contract). `autosaveDelay` applies live. */
 export const META: PluginMeta = {

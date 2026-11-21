@@ -198,7 +198,11 @@ pages hold the design. Existing templates keep their fields (older types are map
 
 The panel has two tabs: **Content** and **Languages**. In Languages you switch site languages on
 and off (a list of ~100 languages with region, `uk-ua`, `en-gb`, `pt-br`…, with a flag), order
-them and mark the default one (★). The setting lives in the store (`GET/PUT /languages`).
+them and mark the default one (★). The setting lives in the store (`GET/PUT /languages`); with
+[grapesjs-site-pages](https://www.npmjs.com/package/grapesjs-site-pages) 2.16+ it is the site's
+(`site.languages`, with the address prefixes and the pages' translated addresses, names and SEO):
+read and changed there (`editor.PagesManager.languages`, the event `pages-manager:languages`), and
+the store's `/languages` follows for servers that read it.
 
 Any field can be marked **Translatable** in the template (🌐). Its value is then a map by
 language code; the other fields keep one value for all languages:

@@ -211,4 +211,42 @@ describe('languages in the editor', () => {
     expect(comp.getEl().innerHTML).toBe('Hallo');
     expect((await store.getEntry('p1'))!.values!.title).toEqual({ 'uk-ua': 'Привіт', 'en-gb': 'Hello', 'de-de': 'Hallo' });
   });
+
+  it('with grapesjs-site-pages 2.16+ the languages are the site\'s: read and changed there, the store follows', async () => {
+    const store = new MemoryContentStore({ templates: [{ id: 'news', name: 'News', fields: FIELDS.slice(0, 2) }] });
+    let site: unknown = { default: 'uk-ua', enabled: ['uk-ua', 'en-gb'] };
+    const records = [{ id: 'p1', name: 'Home', kind: 'page', values: {} }];
+    s = await createEditor({
+      plugin: { store },
+      before: (ed: Editor) => {
+        (ed as any).PagesManager = {
+          list: async () => records,
+          getActiveId: () => 'p1',
+          isRemote: () => false,
+          whenReady: async () => undefined,
+          store: { get: async (id: string) => records.find((r) => r.id === id) },
+          languages: {
+            get: async () => site,
+            set: async (l: unknown) => {
+              site = l;
+              ed.trigger('pages-manager:languages', { languages: l });
+            },
+          },
+        };
+      },
+    });
+    const { editor, api } = s;
+    await until(() => !!api.languages.get());
+    expect(api.languages.get()).toEqual({ default: 'uk-ua', enabled: ['uk-ua', 'en-gb'] });
+    await until(async () => !!(await store.getLanguages()));
+    expect(await store.getLanguages()).toEqual({ default: 'uk-ua', enabled: ['uk-ua', 'en-gb'] });
+    // changed here: written to the site
+    await api.languages.set({ default: 'uk-ua', enabled: ['uk-ua', 'en-gb', 'pl-pl'] });
+    expect(site).toEqual({ default: 'uk-ua', enabled: ['uk-ua', 'en-gb', 'pl-pl'] });
+    // changed in the site's settings: followed here, and in the store
+    site = { default: 'en-gb', enabled: ['en-gb', 'uk-ua'] };
+    editor.trigger('pages-manager:languages', { languages: site });
+    expect(api.languages.get()).toEqual({ default: 'en-gb', enabled: ['en-gb', 'uk-ua'] });
+    await until(async () => (await store.getLanguages())?.default === 'en-gb');
+  });
 });
