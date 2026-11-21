@@ -625,7 +625,7 @@ function storagePlugin(editor: Editor, userOpts: StorageOptions = {}): void {
 
 export const PLUGIN_ID = 'grapesjs-storage';
 /** Version of this package (a test checks it against package.json). */
-export const VERSION = '1.4.0';
+export const VERSION = '1.5.0';
 
 /** Options for forms (plugin contract). `autosaveDelay` applies live. */
 export const META: PluginMeta = {

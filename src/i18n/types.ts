@@ -161,6 +161,13 @@ export interface StorageLabels {
   translatable: string;
   languages: string;
   defaultLanguage: string;
+  translateFrom: string;
+  translateAll: string;
+  translateAllHint: string;
+  translating: string;
+  translateNothing: string;
+  translateUnsupported: string;
+  translateFailed: string;
   dataTab: string;
   languagesHint: string;
   enabledLanguages: string;

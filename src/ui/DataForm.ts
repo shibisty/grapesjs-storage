@@ -18,6 +18,7 @@ import { h } from './dom';
 import { attachHtmlEditor, type HtmlEditorOptions } from './jodit';
 import type { MediaSource, PickedMedia } from './media';
 import { flagOf, isLangMap } from '../languages';
+import { canTranslate, emptyText, hasText, translateValue, UnsupportedPair } from '../translate';
 
 /**
  * Where image, file and gallery fields pick from: the editor's Asset
@@ -592,6 +593,109 @@ export function dataForm(o: DataFormOptions): DataForm {
     return wrap;
   };
 
+  /* ---------------------------- translation ---------------------------- */
+
+  const canTr = (): boolean => !!L && L.enabled.length > 1 && canTranslate();
+  const order = (): string[] => (L ? [defLang, ...L.enabled.filter((c) => c !== defLang)] : []);
+  /** The language to translate a field from: the default if it has a value, else the first that has one. */
+  const sourceOf = (f: SchemaField, map: Record<string, unknown>, not: string): string | null =>
+    order().find((c) => c !== not && !emptyText(f, map[c])) || null;
+  const failText = (e: unknown): string =>
+    e instanceof UnsupportedPair ? fmt(t('translateUnsupported'), `${e.from.split("-")[0].toUpperCase()} → ${e.to.split("-")[0].toUpperCase()}`) : fmt(t('translateFailed'), (e as Error)?.message || String(e));
+
+  /** "⇄ EN": this field in the shown language, translated from one that is filled. */
+  const translateButton = (f: SchemaField, obj: DataValues): HTMLElement | null => {
+    if (!canTr() || !f.translatable || !hasText(f)) return null;
+    const cur = obj[f.name];
+    // an older plain value is the default language's
+    const map = isLangMap(cur) ? (cur as Record<string, unknown>) : emptyText(f, cur) ? null : mapOf(obj, f.name);
+    const src = map && sourceOf(f, map, lang);
+    if (!src) return null;
+    const to = lang;
+    const title = fmt(t('translateFrom'), `${src.split('-')[0].toUpperCase()} → ${to.split('-')[0].toUpperCase()}`);
+    const b = h(
+      'button',
+      {
+        type: 'button',
+        class: 'gjss-tr',
+        title,
+        'aria-label': title,
+        'data-translate': f.name,
+        onclick: async (e: Event) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (b.classList.contains('is-busy')) return;
+          b.classList.add('is-busy');
+          b.textContent = '…';
+          try {
+            const v = await translateValue(f, mapOf(obj, f.name)[src], src, to, (x) => (b.textContent = `${Math.round(x * 100)}%`));
+            mapOf(obj, f.name)[to] = v;
+            changed();
+            if (lang === to) draw();
+          } catch (err) {
+            b.classList.remove('is-busy');
+            b.classList.add('is-failed');
+            b.textContent = '⚠';
+            b.title = failText(err);
+          }
+        },
+      },
+      `⇄ ${src.split('-')[0].toUpperCase()}`
+    );
+    return b;
+  };
+
+  /** Every translatable value of the form: the map and its field (rows of groups / repeaters too). */
+  const translatables = (fields: SchemaField[], obj: unknown, out: Array<{ f: SchemaField; obj: DataValues }> = []): Array<{ f: SchemaField; obj: DataValues }> => {
+    if (!obj || typeof obj !== 'object') return out;
+    for (const f of fields) {
+      const v = (obj as DataValues)[f.name];
+      if (f.translatable) {
+        if (hasText(f)) out.push({ f, obj: obj as DataValues });
+      } else if (f.type === 'group') translatables(f.fields || [], v, out);
+      else if (f.type === 'repeater' && Array.isArray(v)) v.forEach((r) => translatables(f.fields || [], r, out));
+      else if (f.type === 'tab' || f.type === 'accordion') continue;
+    }
+    return out;
+  };
+
+  /** "Translate all": every empty language of every translatable field, from a filled one. */
+  const translateAll = async (b: HTMLButtonElement): Promise<void> => {
+    const jobs: Array<{ f: SchemaField; obj: DataValues; from: string; to: string }> = [];
+    for (const { f, obj } of translatables(o.fields, state)) {
+      if (!isLangMap(obj[f.name]) && emptyText(f, obj[f.name])) continue;
+      const map = mapOf(obj, f.name);
+      const from = sourceOf(f, map, '');
+      if (!from) continue;
+      for (const to of L!.enabled) if (to !== from && emptyText(f, map[to])) jobs.push({ f, obj, from, to });
+    }
+    const label = b.textContent;
+    if (!jobs.length) {
+      b.textContent = t('translateNothing');
+      setTimeout(() => (b.textContent = label), 1500);
+      return;
+    }
+    b.disabled = true;
+    const fails: string[] = [];
+    let n = 0;
+    for (const j of jobs) {
+      b.textContent = `${t('translating')} ${++n}/${jobs.length}`;
+      try {
+        mapOf(j.obj, j.f.name)[j.to] = await translateValue(j.f, mapOf(j.obj, j.f.name)[j.from], j.from, j.to);
+      } catch (err) {
+        const m = failText(err);
+        if (!fails.includes(m)) fails.push(m);
+      }
+    }
+    changed();
+    draw();
+    const nb = el.querySelector<HTMLButtonElement>('.gjss-tr-all');
+    if (nb && fails.length) {
+      nb.classList.add('is-failed');
+      nb.title = fails.join('\n');
+    }
+  };
+
   /** One field: label, hint, control; hidden while its conditions do not hold. */
   const fieldRow = (f: SchemaField, obj: DataValues, path: string[], labels: string[]): HTMLElement => {
     const id = nextId(f.name);
@@ -618,6 +722,8 @@ export function dataForm(o: DataFormOptions): DataForm {
       f.instructions ? h('small', { class: 'gjss-instructions' }, f.instructions) : null,
       control(f, viewOf(f, obj), id, p, lab)
     );
+    const tb = translateButton(f, obj);
+    if (tb) row.querySelector('.gjss-label')?.append(tb);
     // Another language than the default: an empty line shows the default's text as a hint.
     if (L && f.translatable && lang !== defLang) {
       const base = isLangMap(obj[f.name]) ? (obj[f.name] as Record<string, unknown>)[defLang] : undefined;
@@ -727,7 +833,19 @@ export function dataForm(o: DataFormOptions): DataForm {
           code.split('-')[0].toUpperCase(),
           code === defLang ? h('span', { class: 'gjss-lang-def', 'aria-hidden': 'true' }, '•') : null
         )
-      )
+      ),
+      canTr()
+        ? h(
+            'button',
+            {
+              type: 'button',
+              class: 'gjss-tr-all',
+              title: t('translateAllHint'),
+              onclick: (e: Event) => void translateAll(e.currentTarget as HTMLButtonElement),
+            },
+            `⇄ ${t('translateAll')}`
+          )
+        : null
     );
   };
   const draw = (): void => {

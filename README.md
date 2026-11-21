@@ -217,6 +217,14 @@ default one. `getHtml()` and the published page carry the **default** language; 
 another language in through the `data-storage-field` attributes (`localizeValues(fields, values,
 lang, defaultLang)` gives one language's values). `required` is checked for the default language.
 
+**Machine translation** (Chrome 138+ on desktop: the browser's built-in Translator API, on the
+device, free; elsewhere the buttons are not shown). A translatable text field (text, textarea,
+WYSIWYG — also inside a translatable group or repeater) filled in another language gets a
+**⇄ UK** button next to its label: it fills the shown language from that one (the default first).
+**⇄ Translate all** in the language bar fills every empty language of every translatable field;
+filled values are kept. HTML is translated text node by text node, the markup stays. The first
+use of a language pair downloads the browser's model (it starts from the click).
+
 ## Storage
 
 ```ts

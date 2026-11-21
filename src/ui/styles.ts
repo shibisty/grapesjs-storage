@@ -163,6 +163,12 @@ export const CSS = `
 .gjss-lang{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:12px;color:inherit;cursor:pointer;padding:2px 9px 2px 6px;font:inherit;font-size:12px}
 .gjss-lang.is-active{background:var(--gjs-quaternary-color,#d278c9);border-color:transparent;color:#fff}
 .gjss-lang-def{opacity:.8}
+.gjss-tr,.gjss-tr-all{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:inherit;cursor:pointer;font:inherit;border-radius:10px}
+.gjss-tr{margin-inline-start:6px;font-size:10px;padding:0 6px;vertical-align:1px}
+.gjss-tr-all{margin-inline-start:auto;font-size:12px;padding:2px 9px}
+.gjss-tr:hover,.gjss-tr-all:hover:not(:disabled){background:rgba(255,255,255,.18)}
+.gjss-tr.is-busy,.gjss-tr-all:disabled{opacity:.7;cursor:progress}
+.gjss-tr.is-failed,.gjss-tr-all.is-failed{border-color:#e57373}
 .gjss-i18n{display:inline-block;margin-inline-start:6px;font-size:10px;padding:0 5px;border-radius:8px;background:rgba(255,255,255,.12);vertical-align:1px}
 .gjss-lrow{display:flex;align-items:center;gap:4px;padding:6px 10px;border-bottom:1px solid rgba(255,255,255,.05)}
 .gjss-lrow .gjss-switch{margin:0}
